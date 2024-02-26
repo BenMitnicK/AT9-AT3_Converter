@@ -22,22 +22,22 @@ At9&At3_Converter allows you to convert these sound files to other formats
     Add   at9 To MP3
     Add   Drag&Drop
     Add   Notifications
-    UI      Reformated
+    UI    Reformated
 
 **ChangeLog  V2**
 
-    Add      Support for at3
-    Add      ToolTips
-    Add      Some verifications
-    Code   Cleaned
-    UI         Improved      
+    Add  Support for at3
+    Add  ToolTips
+    Add  Some verifications
+    Code Cleaned
+    UI   Improved      
 
 **ChangeLog V2.1**
 
-    Add             Support 48000[kHz]  For At3tool
-    Add             Management Space in File
-    Remove      Browser Button
-    Add             Management of errors messages
+    Add      Support 48000[kHz]  For At3tool
+    Add      Management Space in File
+    Remove   Browser Button
+    Add      Management of errors messages
 
 **ChangeLog V2.2**
 
