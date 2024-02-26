@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8155CFBC-F87A-415F-9FC4-8C4E63F3D394}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>at3_at9_Converter</RootNamespace>
+    <AssemblyName>AT9-AT3_Converter</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NAudio, Version=1.4.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Naudio\NAudio.dll</HintPath>
+    </Reference>
+    <Reference Include="NAudio.WindowsMediaFormat">
+      <HintPath>bin\Debug\Naudio\NAudio.WindowsMediaFormat.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CustomizedToolTip.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="CustomToolTip.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="FormChooser.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormChooser.Designer.cs">
+      <DependentUpon>FormChooser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Ps3BitrateInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Ps3BitrateInfo.Designer.cs">
+      <DependentUpon>Ps3BitrateInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Ps4BitrateInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Ps4BitrateInfo.Designer.cs">
+      <DependentUpon>Ps4BitrateInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PspBitrateInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PspBitrateInfo.Designer.cs">
+      <DependentUpon>PspBitrateInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PsvitaBitrateInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PsvitaBitrateInfo.Designer.cs">
+      <DependentUpon>PsvitaBitrateInfo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FormChooser.resx">
+      <DependentUpon>FormChooser.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Ps3BitrateInfo.resx">
+      <DependentUpon>Ps3BitrateInfo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Ps4BitrateInfo.resx">
+      <DependentUpon>Ps4BitrateInfo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PspBitrateInfo.resx">
+      <DependentUpon>PspBitrateInfo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PsvitaBitrateInfo.resx">
+      <DependentUpon>PsvitaBitrateInfo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\background.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\background3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\background2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\background21.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\background31.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="icon.ico" />
+    <None Include="Resources\at9_Converter1.png" />
+    <None Include="Resources\ps4_bitrate.png" />
+    <None Include="Resources\at9_bitrate.png" />
+    <None Include="Resources\psp_bitrate.png" />
+    <None Include="Resources\ps3_bitrate.png" />
+    <None Include="Resources\at3_Converter1.png" />
+    <None Include="Resources\at3_Converter.png" />
+    <None Include="Resources\at9_Converter.png" />
+    <None Include="Resources\psvita_bitrate.png" />
+    <None Include="Resources\psp_ps3_bitrate.png" />
+    <None Include="Resources\Icon-warning1.png" />
+    <None Include="Resources\Icon-warning.png" />
+    <None Include="Resources\icon_caution.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
