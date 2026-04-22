@@ -22,10 +22,64 @@ namespace at3_at9_Converter
 
     public partial class MainForm : Form
     {
+        private bool isSpanish = true; // Idioma por defecto: Español
 
-        //var dllDirectory = @"C:/some/path";
-        //Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + dllDirectory);
+        // ... (resto de variables existentes) ...
         public static string dir = "", appdir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), version = "";
+        // ... (mantener todas las variables de clase aquí) ...
+
+        // Nuevo método para traducir la interfaz
+        private void UpdateLanguage()
+        {
+            if (isSpanish)
+            {
+                this.tabPage1.Text = "Conversión AT9";
+                this.tabPage2.Text = "Conversión AT3";
+                this.label1.Text = "Arrastra y suelta tu archivo aquí";
+                this.label2.Text = "Arrastra y suelta tu archivo aquí";
+                this.button2.Text = "Convertir";
+                this.button4.Text = "Convertir";
+                this.button1.Text = "Detener Reproducción";
+                this.button3.Text = "Detener Reproducción";
+                this.groupBox1.Text = "Tipo de Conversión";
+                this.groupBox2.Text = "Tipo de Conversión";
+                this.label3.Text = "Bitrate:";
+                this.label4.Text = "Tipo Consola:";
+                this.label5.Text = "Bitrate:";
+                this.label6.Text = "Tipo Consola:";
+                chkLanguage.Text = "Idioma: Español";
+            }
+            else
+            {
+                this.tabPage1.Text = "AT9Tool PSVita/TV & P4";
+                this.tabPage2.Text = "AT3Tool PSP & PS3";
+                this.label1.Text = "Drag and drop your file here";
+                this.label2.Text = "Drag and drop your file here";
+                this.button2.Text = "Convert";
+                this.button4.Text = "Convert";
+                this.button1.Text = "Stop Playing";
+                this.button3.Text = "Stop Playing";
+                this.groupBox1.Text = "Select Type Convertion";
+                this.groupBox2.Text = "Select Type Convertion";
+                this.label3.Text = "BitRate [kbps]:";
+                this.label4.Text = "Console Type:";
+                this.label5.Text = "BitRate [kbps]:";
+                this.label6.Text = "Console Type:";
+                chkLanguage.Text = "Language: English";
+            }
+        }
+
+        private void chkLanguage_CheckedChanged(object sender, EventArgs e)
+        {
+            isSpanish = !chkLanguage.Checked;
+            UpdateLanguage();
+        }
+
+        // Método auxiliar para mensajes traducibles
+        private string GetMsg(string es, string en)
+        {
+            return isSpanish ? es : en;
+        }
         Process playerProcess = new Process();
         ProcessStartInfo playerStartInfo = new ProcessStartInfo();
         public string FileNameSelected = "";
@@ -35,7 +89,6 @@ namespace at3_at9_Converter
         public string VerifFileExtention = "";
         public string fFile = "";
         public string FileNameDrop = "";
-        private string tempFile = "";
         private string pPath = "";
         private string nFile = "";
         private string fFileOrig = "";
@@ -43,7 +96,6 @@ namespace at3_at9_Converter
         private string at9tool = "";
         private string at3bitRate = "";
         private string at9bitRate = "";
-        private CustomToolTip tip;
 
         string[] consoleListAt3 = new string[] { 
             "PSP",
@@ -237,128 +289,52 @@ namespace at3_at9_Converter
             var regex = new Regex(@"\s");
             if (VerifFileExtention.Equals(".wav") || VerifFileExtention.Equals(".WAV"))
             {
-                if (regex.IsMatch(fFileOrig))
-                {
-                    mInputBox("Your file can't convert because it\r contains space(s)", "     would you like to rename it ?", SystemIcons.Question, true, 4);
-                }
-                else
-                {
-                    //MessageBox.Show("M1 " + textBox1.Text);
-                    FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at9";
-                    radioButton2.Enabled = false;
-                    radioButton3.Enabled = false;
-                    radioButton4.Enabled = false;
-                    //button2.Enabled = false;
-                    radioButton1.Enabled = true;
-                    radioButton1.Checked = true;
-                    tabPage1ConsoleCombo();
-                    comboBox3.Items.Clear();
-                    textBox1.Text = fFile;
-                    //comboBox3.Enabled = true;
-                    comboBox4.Enabled = true;
-                }
-                if (!pPath.Equals(dir))
-                {
-                    //MessageBox.Show("M2 " + textBox1.Text);
-                    FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at9";
-                    radioButton2.Enabled = false;
-                    radioButton3.Enabled = false;
-                    radioButton4.Enabled = false;
-                    //button2.Enabled = false;
-                    radioButton1.Enabled = true;
-                    radioButton1.Checked = true;
-                    tabPage1ConsoleCombo();
-                    comboBox3.Items.Clear();
-                    textBox1.Text = fFile;
-                    //comboBox3.Enabled = true;
-                    comboBox4.Enabled = true;
-                }
-                else
-                {
-                    //MessageBox.Show("M3 " + textBox1.Text);
-                    FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at9";
-                    radioButton2.Enabled = false;
-                    radioButton3.Enabled = false;
-                    radioButton4.Enabled = false;
-                    //button2.Enabled = false;
-                    radioButton1.Enabled = true;
-                    radioButton1.Checked = true;
-                    tabPage1ConsoleCombo();
-                    comboBox3.Items.Clear();
-                    textBox1.Text = fFile;
-                    //comboBox3.Enabled = true;
-                    comboBox4.Enabled = true;
-                }
-
+                FileNameSelected = textBox1.Text;
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at9");
+                
+                radioButton2.Enabled = false;
+                radioButton3.Enabled = false;
+                radioButton4.Enabled = false;
+                radioButton1.Enabled = true;
+                radioButton1.Checked = true;
+                tabPage1ConsoleCombo();
+                comboBox3.Items.Clear();
+                comboBox4.Enabled = true;
             }
             else if (VerifFileExtention.Equals(".at9") || VerifFileExtention.Equals(".AT9"))
             {
-                if (regex.IsMatch(fFileOrig))
-                {
-                    mInputBox("Your file can't convert because it\r contains space(s)", "     would you like to rename it ?", SystemIcons.Question, true, 4);
-                    FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "at9";
-                    FileNameFinal2 = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".mp3";
-                    InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
-                }
-                else
-                {
-                    FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "at9";
-                    FileNameFinal2 = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".mp3";
-                    InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
-                }          
-
+                FileNameSelected = textBox1.Text;
+                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
+                InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
             {
-
-                FileNameDrop = textBox1.Text.Substring(textBox1.Text.LastIndexOf(("\\")));
-                FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "mp3";
-                FileNameFinal2 = sReplace(FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav");
-                FileNameFinal = sReplace(FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at9");
+                FileNameSelected = textBox1.Text;
+                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at9");
+                
                 radioButton1.Enabled = false;
                 radioButton2.Enabled = false;
                 radioButton4.Enabled = false;
-                //button2.Enabled = false;
                 radioButton3.Enabled = true;
                 radioButton3.Checked = true;
                 tabPage1ConsoleCombo();
                 comboBox3.Items.Clear();
-                textBox1.Text = fFile;
-                //comboBox3.Enabled = true;
                 comboBox4.Enabled = true;
-
             }
             else
             {
-
                 mMessageBox("Informations", "Please select MP3 Or Wav Or at9 File", SystemIcons.Information, true);
                 radioButton1.Enabled = false;
                 radioButton2.Enabled = false;
                 radioButton3.Enabled = false;
                 radioButton4.Enabled = false;
-                radioButton1.Checked = false;
-                radioButton2.Checked = false;
-                radioButton3.Checked = false;
-                radioButton4.Checked = false;
                 button2.Enabled = false;                      
-                comboBox3.Items.Clear();
-                comboBox4.Items.Clear();
                 comboBox3.Enabled = false;
                 comboBox4.Enabled = false;
                 textBox1.Text = "";
-
             }
-
         }
 
         private void VerifExtention_at3()
@@ -366,15 +342,9 @@ namespace at3_at9_Converter
             var regex = new Regex(@"\s");
             if (VerifFileExtention.Equals(".wav") || VerifFileExtention.Equals(".WAV"))
             {
-                if (regex.IsMatch(fFileOrig))
-                {
-                    mInputBox("Your file can't convert because it\r contains space(s)", "     would you like to rename it ?", SystemIcons.Question, true, 4);
-                }
-                else
-                {
-                FileNameDrop = textBox2.Text.Substring(textBox2.Text.LastIndexOf(("\\")));
-                FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "wav";
-                FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at3";
+                FileNameSelected = textBox2.Text;
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at3");
+                
                 radioButton6.Enabled = false;
                 radioButton7.Enabled = false;
                 radioButton8.Enabled = false;
@@ -382,53 +352,21 @@ namespace at3_at9_Converter
                 radioButton5.Checked = true;
                 tabPage2ConsoleCombo();
                 comboBox2.Items.Clear();
-                textBox2.Text = fFile;
                 comboBox1.Enabled = true;
-                //comboBox2.Enabled = true;
-                }
-                FileNameDrop = textBox2.Text.Substring(textBox2.Text.LastIndexOf(("\\")));
-                FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "wav";
-                FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at3";
-                radioButton6.Enabled = false;
-                radioButton7.Enabled = false;
-                radioButton8.Enabled = false;
-                radioButton5.Enabled = true;
-                radioButton5.Checked = true;
-                tabPage2ConsoleCombo();
-                comboBox2.Items.Clear();
-                textBox2.Text = fFile;
-                comboBox1.Enabled = true;
-                //comboBox2.Enabled = true;
-
             }
             else if (VerifFileExtention.Equals(".at3") || VerifFileExtention.Equals(".AT3"))
             {
-                if (regex.IsMatch(fFileOrig))
-                {
-                    mInputBox("Your file can't convert because it\r contains space(s)", "     would you like to rename it ?", SystemIcons.Question, true, 4);
-                    FileNameDrop = textBox2.Text.Substring(textBox2.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "at3";
-                    FileNameFinal2 = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".mp3";
-                    InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
-                }
-                else
-                {
-                    FileNameDrop = textBox2.Text.Substring(textBox2.Text.LastIndexOf(("\\")));
-                    FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "at3";
-                    FileNameFinal2 = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav";
-                    FileNameFinal = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".mp3";
-                    InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
-                }   
-
+                FileNameSelected = textBox2.Text;
+                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
+                InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
             {
-
-                FileNameDrop = textBox2.Text.Substring(textBox2.Text.LastIndexOf(("\\")));
-                FileNameSelected = FileNameDrop.Substring(1, FileNameDrop.LastIndexOf(("."))) + "mp3";
-                FileNameFinal2 = sReplace(FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".wav");
-                FileNameFinal = sReplace(FileNameSelected.Substring(0, FileNameSelected.LastIndexOf(("."))) + ".at3");
+                FileNameSelected = textBox2.Text;
+                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at3");
+                
                 radioButton5.Enabled = false;
                 radioButton6.Enabled = false;
                 radioButton8.Enabled = false;
@@ -436,32 +374,20 @@ namespace at3_at9_Converter
                 radioButton7.Checked = true;
                 tabPage2ConsoleCombo();
                 comboBox2.Items.Clear();
-                textBox2.Text = fFile;
                 comboBox1.Enabled = true;
-                //comboBox2.Enabled = true;
-
             }
             else
             {
-
                 mMessageBox("Informations", "Please select MP3 Or Wav Or at3 File", SystemIcons.Information, true);
                 radioButton5.Enabled = false;
                 radioButton6.Enabled = false;
                 radioButton7.Enabled = false;
                 radioButton8.Enabled = false;
-                radioButton5.Checked = false;
-                radioButton6.Checked = false;
-                radioButton7.Checked = false;
-                radioButton8.Checked = false;
                 button4.Enabled = false;
-                comboBox1.Items.Clear();
-                comboBox2.Items.Clear();             
                 comboBox1.Enabled = false;               
                 comboBox2.Enabled = false;                
                 textBox2.Text = "";
-
             }
-
         }
 
         /*private void button1_Click(object sender, EventArgs e)
@@ -712,492 +638,203 @@ namespace at3_at9_Converter
 
         private void at9DoProcess()
         {
-            
             if (radioButton1.Checked == true & textBox1.Text != "")
             {
-
+                string wavToProcess = FileNameSelected;
+                bool isTempWav = false;
                 try
                 {
+                    using (var reader = new WaveFileReader(FileNameSelected))
+                    {
+                        if (reader.WaveFormat.SampleRate != 48000)
+                        {
+                            toolStripStatusLabel1.Text = "Resampling WAV to 48000Hz...";
+                            statusStrip1.Refresh();
+                            wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_normalized.wav");
+                            using (var resampler = new WaveFormatConversionStream(new WaveFormat(48000, 16, reader.WaveFormat.Channels), reader))
+                            {
+                                WaveFileWriter.CreateWaveFile(wavToProcess, resampler);
+                            }
+                            isTempWav = true;
+                        }
+                    }
 
-                    System.Diagnostics.Process process = new System.Diagnostics.Process();
-                    System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                    startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                    //startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
-                    startInfo.FileName = @"ATRAC\" + at9tool;
-                    startInfo.Arguments = " -e -br " + at9bitRate + " -wholeloop " + FileNameSelected + " " + FileNameFinal;
-                    //MessageBox.Show(startInfo.FileName + startInfo.Arguments);
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    //label1.SetBounds(32, 164, 234, 25);
-                    //label1.Text = "AT9 in Progress...";                   
-                    //label1.Refresh();
                     toolStripStatusLabel1.Text = "AT9 in Progress...";
                     statusStrip1.Refresh();
-                    process.WaitForExit();
-
+                    RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Error en pre-procesamiento WAV: " + ex.Message);
                 }
-                //mMoveFile();
-                //label1.SetBounds(93, 164, 234, 25);
-                //label1.Text = "Finish!";
+                finally
+                {
+                    if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
+                }
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton2.Checked == true & textBox1.Text != "")
             {
-
                 try
                 {
-
-                    System.Diagnostics.Process process = new System.Diagnostics.Process();
-                    System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                    startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                    startInfo.FileName = @"ATRAC\" + at9tool;
-                    startInfo.Arguments = " -d " + FileNameSelected + " " + FileNameFinal2;
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    //label1.SetBounds(32, 164, 234, 25);
-                    //label1.Text = "Wav in Progress...";                    
-                    //label1.Refresh();
                     toolStripStatusLabel1.Text = "Wav in Progress...";
                     statusStrip1.Refresh();
-                    process.WaitForExit();
-
+                    RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-                //mMoveFile();
-                //label1.SetBounds(93, 164, 234, 25);
-                //label1.Text = "Finish!";
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
-                //System.Threading.Thread.Sleep(1000);
             }
             else if (radioButton3.Checked == true & textBox1.Text != "")
             {
-
                 try
                 {
-                    try
+                    toolStripStatusLabel1.Text = "Wav in Progress...";
+                    statusStrip1.Refresh();
+                    using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected))
                     {
-                        
-                        //label1.SetBounds(32, 164, 234, 25);
-                        //label1.Text = "Wav in Progress...";                        
-                        //label1.Refresh();
-                        toolStripStatusLabel1.Text = "Wav in Progress...";
-                        statusStrip1.Refresh();
-                        
-                        using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected))
+                        using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(48000, 16, mp3.WaveFormat.Channels), mp3))
                         {
-                            /*using (WaveStream pcm = WaveFormatConversionStream.CreatePcmStream(mp3))
-                            {
-                                WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                            }*/
-                            using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(48000, 16, 1), mp3))
-                            {
-                                WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                            }
+                            WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                    try
-                    {
-
-                        System.Diagnostics.Process process = new System.Diagnostics.Process();
-                        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        startInfo.FileName = @"ATRAC\" + at9tool;
-                        startInfo.Arguments = " -e -br " + at9bitRate + " -wholeloop " + FileNameFinal2 + " " + FileNameFinal;
-                        process.StartInfo = startInfo;
-                        process.Start();
-                        //label1.SetBounds(32, 164, 234, 25);
-                        //label1.Text = "AT9 in Progress...";                       
-                        //label1.Refresh();
-                        toolStripStatusLabel1.Text = "AT9 in Progress...";
-                        statusStrip1.Refresh();
-                        process.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
+                    toolStripStatusLabel1.Text = "AT9 in Progress...";
+                    statusStrip1.Refresh();
+                    RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
-                //label1.SetBounds(93, 164, 234, 25);
-                //label1.Text = "Finish!";
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton4.Checked == true & textBox1.Text != "")
             {
-
-                try
-                {
-                    try
-                    {
-                        
-                        System.Diagnostics.Process process = new System.Diagnostics.Process();
-                        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        startInfo.FileName = @"ATRAC\" + at9tool;
-                        startInfo.Arguments = " -d " + FileNameSelected + " " + FileNameFinal2;
-                        process.StartInfo = startInfo;
-                        process.Start();
-                        //label1.SetBounds(32, 164, 234, 25);
-                        //label1.Text = "Wav in Progress...";                        
-                        //label1.Refresh();
-                        toolStripStatusLabel1.Text = "Wav in Progress...";
-                        statusStrip1.Refresh();
-                        process.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                    try
-                    {
-
-                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
-                        psi.FileName = @"Lame\lame.exe";
-                        psi.Arguments = "-V2 " + FileNameFinal2 + " " + FileNameFinal;
-                        psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi);
-                        //label1.SetBounds(32, 164, 234, 25);
-                        //label1.Text = "MP3 in Progress...";                       
-                        //label1.Refresh();
-                        toolStripStatusLabel1.Text = "MP3 in Progress...";
-                        statusStrip1.Refresh();
-                        p.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                try {
+                    RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
+                    RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                } catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
-                //label1.SetBounds(93, 164, 234, 25);
-                //label1.Text = "Finish!";
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
-
         }
 
         private void at3DoProcess()
         {
- 
             if (radioButton5.Checked == true & textBox2.Text != "")
             {
-
+                string wavToProcess = FileNameSelected;
+                bool isTempWav = false;
                 try
                 {
+                    int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
+                    int targetChannels = (comboBox1.Text == "PSP") ? 2 : 0; 
 
-                    //System.Diagnostics.Process process = new System.Diagnostics.Process();
-                    //System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                    Process process = new Process();
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    startInfo.FileName = @"ATRAC\" + at3tool;
-                    startInfo.Arguments = " -e -br " + at3bitRate + " -wholeloop " + FileNameSelected + " " + FileNameFinal;
-                    //MessageBox.Show(startInfo.FileName + startInfo.Arguments);
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    //label2.SetBounds(27, 179, 234, 25);
-                    //label2.Text = "AT3 in Progress...";
-                    //label2.Refresh();
+                    using (var reader = new WaveFileReader(FileNameSelected))
+                    {
+                        if (reader.WaveFormat.SampleRate != targetRate || (targetChannels == 2 && reader.WaveFormat.Channels != 2))
+                        {
+                            toolStripStatusLabel1.Text = "Normalizing for PSP (44100Hz Stereo)...";
+                            statusStrip1.Refresh();
+                            wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_psp_norm.wav");
+                            var outFormat = new WaveFormat(targetRate, 16, (targetChannels == 2) ? 2 : reader.WaveFormat.Channels);
+                            using (var resampler = new WaveFormatConversionStream(outFormat, reader))
+                            {
+                                WaveFileWriter.CreateWaveFile(wavToProcess, resampler);
+                            }
+                            isTempWav = true;
+                        }
+                    }
+
                     toolStripStatusLabel1.Text = "AT3 in Progress...";
-                    statusStrip1.Refresh();                    
-                    process.WaitForExit();
-
+                    statusStrip1.Refresh();
+                    RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
-                catch (Exception ex)
+                catch (Exception ex) { MessageBox.Show("Error PSP: " + ex.Message); }
+                finally
                 {
-                    MessageBox.Show(ex.Message);
+                    if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
                 }
-                //mMoveFile();
-                //label2.SetBounds(93, 179, 234, 25);
-                //label2.Text = "Finish!";
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
                 PlayerFile();
             }
             else if (radioButton6.Checked == true & textBox2.Text != "")
             {
-
-                try
-                {
-
-                    System.Diagnostics.Process process = new System.Diagnostics.Process();
-                    System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                    startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                    startInfo.FileName = @"ATRAC\" + at3tool;
-                    startInfo.Arguments = " -d " + FileNameSelected + " " + FileNameFinal2;
-                    process.StartInfo = startInfo;
-                    process.Start();
-                    //label2.SetBounds(27, 179, 234, 25);
-                    //label2.Text = "Wav in Progress...";
-                    //label2.Refresh();
-                    toolStripStatusLabel1.Text = "Wav in Progress...";
-                    statusStrip1.Refresh();
-                    process.WaitForExit();
-
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-                //mMoveFile();
-                //label2.SetBounds(93, 179, 234, 25);
-                //label2.Text = "Finish!";
+                try { RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\""); }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
-                //System.Threading.Thread.Sleep(1000);
             }
             else if (radioButton7.Checked == true & textBox2.Text != "")
             {
-
-                try
-                {
-                    try
-                    {
-
-                        //label2.SetBounds(27, 179, 234, 25);
-                        //label2.Text = "Wav in Progress...";
-                        //label2.Refresh();
-                        toolStripStatusLabel1.Text = "Wav in Progress...";
-                        statusStrip1.Refresh();
-
-                        using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected))
-                        {
-                            if (comboBox1.Text == "PSP")
-                            {
-                                using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(44100, 16, 1), mp3))
-                                {
-                                    WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                                }
-                            }
-                            else
-                            {
-                                using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(48000, 16, 1), mp3))
-                                {
-                                    WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                                }
-                            }
+                try {
+                    int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
+                    using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected)) {
+                        using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(targetRate, 16, mp3.WaveFormat.Channels), mp3)) {
+                            WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                    try
-                    {
-
-                        System.Diagnostics.Process process = new System.Diagnostics.Process();
-                        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        startInfo.FileName = @"ATRAC\" + at3tool;
-                        startInfo.Arguments = " -e -br " + at3bitRate + " -wholeloop " + FileNameFinal2 + " " + FileNameFinal;
-                        process.StartInfo = startInfo;
-                        process.Start();
-                        //label2.SetBounds(27, 179, 234, 25);
-                        //label2.Text = "AT3 in Progress...";
-                        //label2.Refresh();
-                        toolStripStatusLabel1.Text = "AT3 in Progress...";
-                        statusStrip1.Refresh();
-                        process.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                    RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                } catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
-                //label2.SetBounds(93, 179, 234, 25);
-                //label2.Text = "Finish!";
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
                 PlayerFile();
             }
             else if (radioButton8.Checked == true & textBox2.Text != "")
             {
-
-                try
-                {
-                    try
-                    {
-
-                        System.Diagnostics.Process process = new System.Diagnostics.Process();
-                        System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-                        startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        startInfo.FileName = @"ATRAC\" + at3tool;
-                        startInfo.Arguments = " -d " + FileNameSelected + " " + FileNameFinal2;
-                        process.StartInfo = startInfo;
-                        process.Start();
-                        //label2.SetBounds(27, 179, 234, 25);
-                        //label2.Text = "Wav in Progress...";
-                        //label2.Refresh();
-                        toolStripStatusLabel1.Text = "Wav in Progress...";
-                        statusStrip1.Refresh();
-                        process.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                    try
-                    {
-
-                        System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
-                        psi.FileName = @"Lame\lame.exe";
-                        psi.Arguments = "-V2 " + FileNameFinal2 + " " + FileNameFinal;
-                        psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-                        System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi);
-                        //label2.SetBounds(27, 179, 234, 25);
-                        //label2.Text = "MP3 in Progress...";
-                        //label2.Refresh();
-                        toolStripStatusLabel1.Text = "MP3 in Progress...";
-                        statusStrip1.Refresh();
-                        p.WaitForExit();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
+                try {
+                    RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
+                    RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                } catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
-                //label2.SetBounds(93, 179, 234, 25);
-                //label2.Text = "Finish!";
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
-
         }
 
         private void mMoveFile()
         {
-
-            string path = dir + "\\" + FileNameFinal;
-            string path2 = pPath + "\\" + FileNameFinal;
-            //MessageBox.Show("M3 " + path);
-            //MessageBox.Show("M33 " + path2);
             try
             {
-                /*if (!File.Exists(path))
+                string fileName = Path.GetFileName(FileNameFinal);
+                string sourcePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+                string destPath = FileNameFinal; // FileNameFinal ya contiene la ruta completa correcta
+
+                // Si el archivo se creó en la carpeta del programa pero el destino es otro
+                if (File.Exists(sourcePath) && sourcePath.ToLower() != destPath.ToLower())
                 {
-                    // This statement ensures that the file is created,
-                    // but the handle is not kept.
-                    using (FileStream fs = File.Create(path)) { }
-                }*/
-
-                // Ensure that the target does not exist.
-                if (!pPath.Equals(dir))
-                {
-                    if (File.Exists(path2))
-                    {
-                        mInputBox("Move file to directory", "File(s) Exist Do you want to replace it ?", SystemIcons.Question, true, 5); //File.Delete(path2);
-                    }
-
-                    else
-                    {
-
-                        // Move the file.
-                        File.Move(path, path2);
-
-                    }
-
-                    // See if the original exists now.
-                    /*if (File.Exists(path))
-                    {
-                        Console.WriteLine("The original file still exists, which is unexpected.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("The original file no longer exists, which is expected.");
-                    }*/
+                    if (File.Exists(destPath)) File.Delete(destPath);
+                    File.Move(sourcePath, destPath);
                 }
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                // Solo registramos en log si hay un error real, para no molestar al usuario
+                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log"), 
+                    "\r\nError en mMoveFile: " + ex.Message);
             }
-
         }
 
         private void mMoveFile2()
         {
-
-            string path = dir + "\\" + FileNameFinal;
-            string path1 = dir + "\\" + FileNameFinal2;
-            string path2 = pPath + "\\" + FileNameFinal;
-            string path3 = pPath + "\\" + FileNameFinal2;
-            try
-            {
-                /*if (!File.Exists(path))
-                {
-                    // This statement ensures that the file is created,
-                    // but the handle is not kept.
-                    using (FileStream fs = File.Create(path)) { }
-                }*/
-
-                // Ensure that the target does not exist.
-                if (!pPath.Equals(dir))
-                {
-                    if (File.Exists(path2) || File.Exists(path3))
-                    {
-                        mInputBox("Move file to directory", "File(s) Exist Do you want to replace it ?", SystemIcons.Question, true, 6); //File.Delete(path2);
+            // Esta función se llamaba cuando el usuario decía que NO quería borrar el WAV
+            // Simplemente nos aseguramos de que los archivos estén donde deben
+            try {
+                mMoveFile();
+                // Si existe un segundo archivo final (como en MP3 -> AT3 + WAV)
+                if (!string.IsNullOrEmpty(FileNameFinal2)) {
+                    string fileName2 = Path.GetFileName(FileNameFinal2);
+                    string sourcePath2 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName2);
+                    string destPath2 = FileNameFinal2;
+                    if (File.Exists(sourcePath2) && sourcePath2.ToLower() != destPath2.ToLower()) {
+                        if (File.Exists(destPath2)) File.Delete(destPath2);
+                        File.Move(sourcePath2, destPath2);
                     }
-
-                    else
-                    {
-
-                        // Move the file.
-                        File.Move(path, path2);
-                        File.Move(path1, path3);
-                        Console.WriteLine("{0} was moved to {1}.", path, path2);
-                    }
-
-                    // See if the original exists now.
-                    /*if (File.Exists(path))
-                    {
-                        Console.WriteLine("The original file still exists, which is unexpected.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("The original file no longer exists, which is expected.");
-                    }*/
                 }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
+            } catch { }
         }
 
         private void DeleteFile()
@@ -1253,45 +890,34 @@ namespace at3_at9_Converter
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox1.Text != "")
-            {
-                textBox1.Text = ""; button2.Enabled = false; comboBox3.Enabled = false; comboBox4.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label1.SetBounds(32, 164, 234, 25); label1.Text = "DragDrop Your File";*/
-            }
         }
 
         private void radioButton2_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox1.Text != "") { textBox1.Text = ""; button2.Enabled = false; comboBox4.Enabled = false; comboBox3.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label1.SetBounds(32, 164, 234, 25); label1.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton3_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox1.Text != "") { textBox1.Text = ""; button2.Enabled = false; comboBox4.Enabled = false; comboBox3.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label1.SetBounds(32, 164, 234, 25); label1.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton4_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox1.Text != "") { textBox1.Text = ""; button2.Enabled = false; comboBox4.Enabled = false; comboBox3.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label1.SetBounds(32, 164, 234, 25); label1.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton5_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox2.Text != "") { textBox2.Text = ""; button4.Enabled = false; comboBox1.Enabled = false; comboBox2.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label2.SetBounds(27, 179, 234, 25); label2.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton6_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox2.Text != "") { textBox2.Text = ""; button4.Enabled = false; comboBox1.Enabled = false; comboBox2.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label2.SetBounds(27, 179, 234, 25); label2.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton7_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox2.Text != "") { textBox2.Text = ""; button4.Enabled = false; comboBox1.Enabled = false; comboBox2.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label2.SetBounds(27, 179, 234, 25); label2.Text = "DragDrop Your File";*/ }
         }
 
         private void radioButton8_CheckedChanged(object sender, EventArgs e)
         {
-            if (textBox2.Text != "") { textBox2.Text = ""; button4.Enabled = false; comboBox1.Enabled = false; comboBox2.Enabled = false; toolStripStatusLabel1.Text = "Ready!"; statusStrip1.Refresh(); /*label2.SetBounds(27, 179, 234, 25); label2.Text = "DragDrop Your File";*/ }
         }
 
         private DialogResult InputBox(string title, string promptText, Icon icon, bool isDigit = false)
@@ -1696,20 +1322,13 @@ namespace at3_at9_Converter
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            StringBuilder newdir = new StringBuilder(Path.GetDirectoryName(Assembly.GetAssembly(typeof(Program)).CodeBase));
-            dir = (newdir.Remove(0, 6).ToString());
+            dir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
             string[] versionpart = this.ProductVersion.Split('.');
             version = versionpart[0] + "." + versionpart[1];
             this.Text += MainForm.version;
-            // Add a link to the LinkLabel.
             LinkLabel.Link link = new LinkLabel.Link();
             link.LinkData = "http://bmk.hamtek-solutions.com/";
             linkLabel2.Links.Add(link);
-            //new ToolTip().SetToolTip(pictureBox1, "The desired tool-tip text.");
-            //this.tip = new CustomToolTip();
-            //comboBox1.SelectedIndex = 0;
-            //comboBox2.SelectedIndex = 3;
-            //comboBox3.SelectedIndex = 3;
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -1767,17 +1386,32 @@ namespace at3_at9_Converter
 
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //tabPage1PSVitaCombo();
             at3bitRate = comboBox2.Text;
             button4.Enabled = true;
+
+            // Actualizar nombre final con el nuevo bitrate
+            if (!string.IsNullOrEmpty(FileNameSelected))
+            {
+                string dirPath = Path.GetDirectoryName(FileNameSelected);
+                string fileNameOnly = Path.GetFileNameWithoutExtension(FileNameSelected);
+                FileNameFinal = Path.Combine(dirPath, fileNameOnly + "_" + at3bitRate + "bit.at3");
+                FileNameFinal2 = Path.Combine(dirPath, fileNameOnly + ".wav");
+            }
         }
 
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //tabPage1PSVitaCombo();
             at9bitRate = comboBox3.Text;
             button2.Enabled = true;
 
+            // Actualizar nombre final con el nuevo bitrate
+            if (!string.IsNullOrEmpty(FileNameSelected))
+            {
+                string dirPath = Path.GetDirectoryName(FileNameSelected);
+                string fileNameOnly = Path.GetFileNameWithoutExtension(FileNameSelected);
+                FileNameFinal = Path.Combine(dirPath, fileNameOnly + "_" + at9bitRate + "bit.at9");
+                FileNameFinal2 = Path.Combine(dirPath, fileNameOnly + ".wav");
+            }
         }
 
         private void tabPage1ConsoleCombo()
@@ -1790,12 +1424,14 @@ namespace at3_at9_Converter
         {
             comboBox3.Items.Clear();
             for (int i = 0; i < psvitaList.Length; i++) { comboBox3.Items.Add(psvitaList[i]); }
+            if (comboBox3.Items.Count > 0) comboBox3.SelectedIndex = 0;
         }
 
         private void tabPage1PS4Combo()
         {
             comboBox3.Items.Clear();
             for (int i = 0; i < ps4List.Length; i++) { comboBox3.Items.Add(ps4List[i]); }
+            if (comboBox3.Items.Count > 0) comboBox3.SelectedIndex = 0;
         }
 
         private void tabPage2ConsoleCombo()
@@ -1808,12 +1444,14 @@ namespace at3_at9_Converter
         {
             comboBox2.Items.Clear();
             for (int i = 0; i < pspList.Length; i++) { comboBox2.Items.Add(pspList[i]); } 
+            if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
         }
 
         private void tabPage2PS3Combo()
         {
             comboBox2.Items.Clear();
             for (int i = 0; i < ps3List.Length; i++) { comboBox2.Items.Add(ps3List[i]); }
+            if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
         }
 
         /*private void pictureBox1_MouseHover(object sender, EventArgs e)
@@ -1888,38 +1526,33 @@ namespace at3_at9_Converter
             }
         }
 
-        private void mPlayer(){
-
+        private void mPlayer()
+        {
             if (comboBox1.Text == "PSP")
             {
                 try
                 {
-
-                    //System.Diagnostics.Process process = new System.Diagnostics.Process();
-                    //System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
+                    playerProcess = new Process();
+                    playerStartInfo = new ProcessStartInfo();
                     playerStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    playerStartInfo.FileName = @"player\MiniPlayer.exe ";
-                    playerStartInfo.Arguments = FileNameFinal;
+                    playerStartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"PLAYER\MiniPlayer.exe");
+                    playerStartInfo.Arguments = "\"" + FileNameFinal + "\"";
+                    playerStartInfo.UseShellExecute = false;
+                    playerStartInfo.CreateNoWindow = true;
+                    playerStartInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
                     playerProcess.StartInfo = playerStartInfo;
                     playerProcess.Start();
-                    //label1.SetBounds(32, 164, 234, 25);
-                    //label1.Text = "AT9 in Progress...";                       
-                    //label1.Refresh();
+
                     toolStripStatusLabel1.Text = "Playing...";
                     statusStrip1.Refresh();
                     button1.Enabled = true;
-                    //playerProcess.WaitForExit();
-                    //toolStripStatusLabel1.Text = "Stop!";
-                    //statusStrip1.Refresh();
-                    
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show("Error al reproducir: " + ex.Message);
                 }
-                
             }
-
         }
 
         private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1934,6 +1567,52 @@ namespace at3_at9_Converter
             toolStripStatusLabel1.Text = "Stop!";
             statusStrip1.Refresh();
             button1.Enabled = false;
+        }
+
+        private void RunExternalProcess(string fileName, string arguments)
+        {
+            try
+            {
+                Process process = new Process();
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+                startInfo.Arguments = arguments;
+                startInfo.UseShellExecute = false;
+                startInfo.CreateNoWindow = true;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.RedirectStandardError = true;
+                startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                
+                process.StartInfo = startInfo;
+                process.Start();
+                
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                
+                process.WaitForExit();
+
+                if (process.ExitCode != 0 || !string.IsNullOrEmpty(error) || !string.IsNullOrEmpty(output))
+                {
+                    string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
+                    string logEntry = string.Format("\r\n--- {0} ---\r\nArchivo: {1}\r\nComando: {2} {3}\r\nSalida:\r\n{4}\r\nErrores:\r\n{5}\r\n--------------------------\r\n", 
+                        DateTime.Now.ToString(), fileName, fileName, arguments, output, error);
+                    
+                    File.AppendAllText(logPath, logEntry);
+                    
+                    if (process.ExitCode != 0)
+                    {
+                         toolStripStatusLabel1.Text = "Error! Check conversion_errors.log";
+                         statusStrip1.Refresh();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
+                File.AppendAllText(logPath, "\r\nEXCEPCIÓN CRÍTICA: " + DateTime.Now.ToString() + " - " + ex.Message + "\r\n");
+                MessageBox.Show("Error crítico al ejecutar la herramienta. Consulta conversion_errors.log", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
     }
