@@ -14,8 +14,6 @@ namespace at3_at9_Converter
         {
             #region Constants
 
-            public static int TOOLTIP_WIDTH;
-            public static int TOOLTIP_HEIGHT;
             private const int BORDER_THICKNESS = 1;
             private const int PADDING = 6;
             private const int DEFAULT_IMAGE_WIDTH = 15;
@@ -37,7 +35,7 @@ namespace at3_at9_Converter
             private Brush myTextBrush = new SolidBrush(Color.Black);
             private Brush myBorderBrush = new SolidBrush(myBorderColor);
 
-            private Size mySize = new Size(TOOLTIP_WIDTH, TOOLTIP_HEIGHT);
+            private Size mySize = new Size(0, 0);
 
             private int myInternalImageWidth = DEFAULT_IMAGE_WIDTH;
             private bool myAutoSize = true;
