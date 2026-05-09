@@ -1066,8 +1066,13 @@ namespace at3_at9_Converter
             this.Text += MainForm.version;
             LinkLabel.Link link = new LinkLabel.Link();
             link.LinkData = "http://bmk.hamtek-solutions.com/";
-            linkLabel2.Links.Add(link);
             LoadLanguageList();
+
+            label1.AutoSize = false;
+            label1.TextAlign = ContentAlignment.MiddleCenter;
+
+            label2.AutoSize = false;
+            label2.TextAlign = ContentAlignment.MiddleCenter;
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
