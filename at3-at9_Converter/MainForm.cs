@@ -1,85 +1,36 @@
-﻿using System;
+using at3_at9_Converter.Properties;
+using NAudio;
+using NAudio.Wave;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Runtime;
-using NAudio.Wave;
-using NAudio;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Reflection;
-using at3_at9_Converter.Properties;
-using System.Diagnostics;
 
 namespace at3_at9_Converter
 {
 
     public partial class MainForm : Form
     {
-        private bool isSpanish = true; // Idioma por defecto: Español
 
-        // ... (resto de variables existentes) ...
+        private Dictionary<string, string> lang = new Dictionary<string, string>();
+        private string languageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lang");
+
+        // ... (remaining existing variables) ...
         public static string dir = "", appdir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), version = "";
-        // ... (mantener todas las variables de clase aquí) ...
+        // ... (keep all class variables here) ...
 
-        // Nuevo método para traducir la interfaz
-        private void UpdateLanguage()
-        {
-            if (isSpanish)
-            {
-                this.tabPage1.Text = "Conversión AT9";
-                this.tabPage2.Text = "Conversión AT3";
-                this.label1.Text = "Arrastra y suelta tu archivo aquí";
-                this.label2.Text = "Arrastra y suelta tu archivo aquí";
-                this.button2.Text = "Convertir";
-                this.button4.Text = "Convertir";
-                this.button1.Text = "Detener Reproducción";
-                this.button3.Text = "Detener Reproducción";
-                this.groupBox1.Text = "Tipo de Conversión";
-                this.groupBox2.Text = "Tipo de Conversión";
-                this.label3.Text = "Bitrate:";
-                this.label4.Text = "Tipo Consola:";
-                this.label5.Text = "Bitrate:";
-                this.label6.Text = "Tipo Consola:";
-                chkLanguage.Text = "Idioma: Español";
-            }
-            else
-            {
-                this.tabPage1.Text = "AT9Tool PSVita/TV & P4";
-                this.tabPage2.Text = "AT3Tool PSP & PS3";
-                this.label1.Text = "Drag and drop your file here";
-                this.label2.Text = "Drag and drop your file here";
-                this.button2.Text = "Convert";
-                this.button4.Text = "Convert";
-                this.button1.Text = "Stop Playing";
-                this.button3.Text = "Stop Playing";
-                this.groupBox1.Text = "Select Type Convertion";
-                this.groupBox2.Text = "Select Type Convertion";
-                this.label3.Text = "BitRate [kbps]:";
-                this.label4.Text = "Console Type:";
-                this.label5.Text = "BitRate [kbps]:";
-                this.label6.Text = "Console Type:";
-                chkLanguage.Text = "Language: English";
-            }
-        }
-
-        private void chkLanguage_CheckedChanged(object sender, EventArgs e)
-        {
-            isSpanish = !chkLanguage.Checked;
-            UpdateLanguage();
-        }
-
-        // Método auxiliar para mensajes traducibles
-        private string GetMsg(string es, string en)
-        {
-            return isSpanish ? es : en;
-        }
         Process playerProcess = new Process();
         ProcessStartInfo playerStartInfo = new ProcessStartInfo();
         public string FileNameSelected = "";
@@ -264,22 +215,16 @@ namespace at3_at9_Converter
             {
             nFile = sReplace(fFileOrig);
             System.IO.File.Move(dir + "\\" + fFileOrig, dir + "\\" + nFile);
-            //textBox1.Text = pPath + "\\" + nFile;
-            //VerifFileExtention = textBox1.Text.Substring(textBox1.Text.LastIndexOf((".")));
                 fFile = dir + "\\" + nFile;
                 fFileOrig = nFile;
                 
-            //VerifExtention_at9();
             }
             else if (tabControl1.SelectedIndex == 1)
             {
                 nFile = sReplace(fFileOrig);
                 System.IO.File.Move(textBox2.Text, pPath + "\\" + nFile);
-                //textBox2.Text = pPath + "\\" + nFile;
-                //VerifFileExtention = textBox2.Text.Substring(textBox2.Text.LastIndexOf((".")));
                 fFile = textBox2.Text;
                 fFileOrig = nFile;
-                //VerifExtention_at3();
             }
 
         }
@@ -389,184 +334,6 @@ namespace at3_at9_Converter
                 textBox2.Text = "";
             }
         }
-
-        /*private void button1_Click(object sender, EventArgs e)
-        {
-           
-            if (radioButton1.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    //openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "wav files(*.wav)|*.wav";
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox1.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal = FileNameConvert + ".at9";
-                        button2.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton2.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "at9 files(*.at9)|*.at9";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox1.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal = FileNameConvert + ".wav";
-                        button2.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton3.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "MP3 files(*.mp3)|*.mp3";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox1.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal2 = FileNameConvert + ".at9";
-                        FileNameFinal = FileNameConvert + ".wav";
-                        button2.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton4.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "at9 files(*.at9)|*.at9";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox1.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal2 = FileNameConvert + ".mp3";
-                        FileNameFinal = FileNameConvert + ".wav";
-                        button2.Enabled = true;
-                    }
-                }
-            }
-            else {
-
-                mMessageBox("Informations", "Please select Convertion Type First!", SystemIcons.Information, true);                
-            }
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-
-            if (radioButton5.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    //openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "wav files(*.wav)|*.wav";
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox2.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal = FileNameConvert + ".at3";
-                        button4.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton6.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "at3 files(*.at3)|*.at3";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox2.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal = FileNameConvert + ".wav";
-                        button4.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton7.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "MP3 files(*.mp3)|*.mp3";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox2.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal2 = FileNameConvert + ".at3";
-                        FileNameFinal2 = sReplace(FileNameFinal2);
-                        FileNameFinal = FileNameConvert + ".wav";
-                        FileNameFinal = sReplace(FileNameFinal);
-                        button4.Enabled = true;
-                    }
-                }
-            }
-            else if (radioButton8.Checked == true)
-            {
-                // Initialise une instance de OpenFileDialog  
-                using (OpenFileDialog openfileDialog = new OpenFileDialog())
-                {
-                    openfileDialog.RestoreDirectory = true;
-                    openfileDialog.Filter = "at3 files(*.at3)|*.at3";
-
-
-                    if (openfileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        textBox2.Text = openfileDialog.FileName;
-                        FileNameSelected = openfileDialog.SafeFileName;
-                        FileNameConvert = FileNameSelected.Substring(0, FileNameSelected.LastIndexOf((".")));
-                        FileNameFinal2 = FileNameConvert + ".mp3";
-                        FileNameFinal = FileNameConvert + ".wav";
-                        button4.Enabled = true;
-                    }
-                }
-            }
-            else
-            {
-
-                mMessageBox("Informations", "Please select Convertion Type First!", SystemIcons.Information, true); 
-            }
-        }*/
-
-        
-
         private void button2_Click(object sender, EventArgs e)
         {
   
@@ -642,6 +409,7 @@ namespace at3_at9_Converter
             {
                 string wavToProcess = FileNameSelected;
                 bool isTempWav = false;
+                bool REP = false;
                 try
                 {
                     using (var reader = new WaveFileReader(FileNameSelected))
@@ -661,33 +429,41 @@ namespace at3_at9_Converter
 
                     toolStripStatusLabel1.Text = "AT9 in Progress...";
                     statusStrip1.Refresh();
-                    RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
+                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error en pre-procesamiento WAV: " + ex.Message);
+                    MessageBox.Show("Error during WAV preprocessing: " + ex.Message);
                 }
                 finally
                 {
                     if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
                 }
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton2.Checked == true & textBox1.Text != "")
             {
+                bool REP = false;
                 try
                 {
                     toolStripStatusLabel1.Text = "Wav in Progress...";
                     statusStrip1.Refresh();
-                    RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
+                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
                 }
                 catch (Exception ex) { MessageBox.Show(ex.Message); }
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton3.Checked == true & textBox1.Text != "")
             {
+                bool REP = false;
                 try
                 {
                     toolStripStatusLabel1.Text = "Wav in Progress...";
@@ -701,22 +477,32 @@ namespace at3_at9_Converter
                     }
                     toolStripStatusLabel1.Text = "AT9 in Progress...";
                     statusStrip1.Refresh();
-                    RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
                 }
                 catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton4.Checked == true & textBox1.Text != "")
-            {
+            {              
                 try {
-                    RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
-                    RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
-                } catch (Exception ex) { MessageBox.Show(ex.Message); }
-                DeleteFile();
-                toolStripStatusLabel1.Text = "Finish!";
-                statusStrip1.Refresh();
+                    bool REP = RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
+                    if (!REP)
+                        return;
+
+                    REP = RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                    if (!REP)
+                        return;
+
+                    DeleteFile();
+                    toolStripStatusLabel1.Text = "Finish!";
+                    statusStrip1.Refresh();
+
+                } catch (Exception ex) { MessageBox.Show(ex.Message); }             
             }
         }
 
@@ -726,6 +512,7 @@ namespace at3_at9_Converter
             {
                 string wavToProcess = FileNameSelected;
                 bool isTempWav = false;
+                bool REP = false;
                 try
                 {
                     int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
@@ -749,26 +536,34 @@ namespace at3_at9_Converter
 
                     toolStripStatusLabel1.Text = "AT3 in Progress...";
                     statusStrip1.Refresh();
-                    RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
+                    REP = RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
-                catch (Exception ex) { MessageBox.Show("Error PSP: " + ex.Message); }
+                catch (Exception ex) { MessageBox.Show("PSP conversion error: " + ex.Message); }
                 finally
                 {
                     if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
                 }
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
                 PlayerFile();
             }
             else if (radioButton6.Checked == true & textBox2.Text != "")
             {
-                try { RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\""); }
+                bool REP = false;
+                try { REP = RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\""); }
                 catch (Exception ex) { MessageBox.Show(ex.Message); }
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
             }
             else if (radioButton7.Checked == true & textBox2.Text != "")
             {
+                bool REP = false;
                 try {
                     int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
                     using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected)) {
@@ -776,9 +571,12 @@ namespace at3_at9_Converter
                             WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
                         }
                     }
-                    RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                    REP = RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
                 } catch (Exception ex) { MessageBox.Show(ex.Message); }
                 DeleteFile();
+                if (!REP)
+                    return;
+
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
                 PlayerFile();
@@ -786,12 +584,19 @@ namespace at3_at9_Converter
             else if (radioButton8.Checked == true & textBox2.Text != "")
             {
                 try {
-                    RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
-                    RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                    bool REP = RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
+                    if (!REP)
+                        return;
+
+                    REP = RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
+                    DeleteFile();
+                    if (!REP)
+                        return;
+
+                    toolStripStatusLabel1.Text = "Finish!";
+                    statusStrip1.Refresh();
+
                 } catch (Exception ex) { MessageBox.Show(ex.Message); }
-                DeleteFile();
-                toolStripStatusLabel1.Text = "Finish!";
-                statusStrip1.Refresh();
             }
         }
 
@@ -801,9 +606,9 @@ namespace at3_at9_Converter
             {
                 string fileName = Path.GetFileName(FileNameFinal);
                 string sourcePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-                string destPath = FileNameFinal; // FileNameFinal ya contiene la ruta completa correcta
+                string destPath = FileNameFinal; // FileNameFinal already contains the correct full path
 
-                // Si el archivo se creó en la carpeta del programa pero el destino es otro
+                // If the file was created in the program folder but the destination is different
                 if (File.Exists(sourcePath) && sourcePath.ToLower() != destPath.ToLower())
                 {
                     if (File.Exists(destPath)) File.Delete(destPath);
@@ -812,19 +617,20 @@ namespace at3_at9_Converter
             }
             catch (Exception ex)
             {
-                // Solo registramos en log si hay un error real, para no molestar al usuario
+                // Only log real errors to avoid bothering the user
                 File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log"), 
-                    "\r\nError en mMoveFile: " + ex.Message);
+                    "\r\nError in mMoveFile: " + ex.Message);
             }
         }
 
         private void mMoveFile2()
         {
-            // Esta función se llamaba cuando el usuario decía que NO quería borrar el WAV
-            // Simplemente nos aseguramos de que los archivos estén donde deben
-            try {
+            // This function was called when the user chose NOT to delete the WAV file
+            // Simply make sure the files are where they should be
+            try
+            {
                 mMoveFile();
-                // Si existe un segundo archivo final (como en MP3 -> AT3 + WAV)
+                // If a second final file exists, such as MP3 -> AT3 + WAV
                 if (!string.IsNullOrEmpty(FileNameFinal2)) {
                     string fileName2 = Path.GetFileName(FileNameFinal2);
                     string sourcePath2 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName2);
@@ -881,8 +687,6 @@ namespace at3_at9_Converter
                 comboBox2.Enabled = false;
                 comboBox3.Enabled = false;
                 comboBox4.Enabled = false;
-                //label1.SetBounds(32, 164, 234, 25); label1.Text = "DragDrop Your File";
-                //label2.SetBounds(27, 179, 234, 25); label2.Text = "DragDrop Your File";
                 toolStripStatusLabel1.Text = "Ready!";
                 statusStrip1.Refresh();
             }
@@ -926,28 +730,20 @@ namespace at3_at9_Converter
             Label label = new Label();
             Button buttonMP3 = new Button();   
             Button buttonWAV = new Button();
-            //Icon icon1;
             PictureBox icon1 = new PictureBox();
-            //TextBox textBox = new TextBox();
 
             if (isDigit == true)
-                //textBox.TypeNumricOnly = true; MessageBoxIcon.Exclamation; 
-
-                //textBox.Width = 1000;
 
             form.Text = title;
             label.Text = promptText;
-            //textBox.Text = value;
 
             buttonMP3.Text = "MP3";
             buttonWAV.Text = "WAV";
             buttonMP3.DialogResult = DialogResult.OK;
             buttonWAV.DialogResult = DialogResult.Cancel;
             icon1.Image = icon.ToBitmap();
-            //icon1 = icon;
 
             label.SetBounds(50, 22, 290, 17);
-            //textBox.SetBounds(12, 36, 372, 20);
             icon1.SetBounds(15, 15, 35, 35);
             buttonMP3.SetBounds(24, 54, 140, 23);
             buttonWAV.SetBounds(172, 54, 140, 23);
@@ -959,13 +755,9 @@ namespace at3_at9_Converter
             buttonWAV.ForeColor = Color.Green;
             buttonMP3.Font = new Font("Arial", 8, FontStyle.Bold);
             buttonWAV.Font = new Font("Arial", 8, FontStyle.Bold);
-            //textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
-            //buttonMP3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            //buttonWAV.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
             form.ClientSize = new Size(335, 100);
             form.Controls.AddRange(new Control[] { icon1, label, buttonMP3, buttonWAV });
-            //form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
             form.MinimizeBox = false;
@@ -992,7 +784,6 @@ namespace at3_at9_Converter
                         comboBox4.Enabled = true;
                         tabPage1ConsoleCombo();
                         textBox1.Text = fFile;
-                        //button2.Enabled = true;
                     }
                     else if (tabControl1.SelectedTab == tabPage2)
                     {
@@ -1007,7 +798,6 @@ namespace at3_at9_Converter
                         comboBox2.Enabled = false;
                         tabPage2ConsoleCombo();
                         textBox2.Text = fFile;
-                        //button4.Enabled = true;
                     }
                     break;
                 case DialogResult.Cancel:
@@ -1024,7 +814,6 @@ namespace at3_at9_Converter
                         comboBox4.Enabled = true;
                         tabPage1ConsoleCombo();
                         textBox1.Text = fFile;
-                        //button2.Enabled = true;
                     }
                     else if (tabControl1.SelectedTab == tabPage2)
                     {
@@ -1039,11 +828,9 @@ namespace at3_at9_Converter
                         comboBox2.Enabled = false;
                         tabPage2ConsoleCombo();
                         textBox2.Text = fFile;
-                        //button4.Enabled = true;
                     }
                     break;               
             }
-            //value = textBox.Text;
             return dialogResult;
 
         }
@@ -1054,29 +841,21 @@ namespace at3_at9_Converter
             Label label = new Label();
             Button buttonYes = new Button();
             Button buttonNo = new Button();
-            //Icon icon1;
             PictureBox icon1 = new PictureBox();
             int z = i;
-            //TextBox textBox = new TextBox();
 
             if (isDigit == true)
-                //textBox.TypeNumricOnly = true; MessageBoxIcon.Exclamation; 
-
-                //textBox.Width = 1000;
 
                 form.Text = title;
             label.Text = promptText;
-            //textBox.Text = value;
 
             buttonYes.Text = "Yes";
             buttonNo.Text = "No";
             buttonYes.DialogResult = DialogResult.OK;
             buttonNo.DialogResult = DialogResult.Cancel;
             icon1.Image = icon.ToBitmap();
-            //icon1 = icon;
 
             label.SetBounds(50, 22, 290, 17);
-            //textBox.SetBounds(12, 36, 372, 20);
             icon1.SetBounds(15, 15, 35, 35);
             buttonYes.SetBounds(24, 54, 140, 23);
             buttonNo.SetBounds(172, 54, 140, 23);
@@ -1088,13 +867,9 @@ namespace at3_at9_Converter
             buttonNo.ForeColor = Color.Green;
             buttonYes.Font = new Font("Arial", 8, FontStyle.Bold);
             buttonNo.Font = new Font("Arial", 8, FontStyle.Bold);
-            //textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
-            //buttonMP3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            //buttonWAV.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
             form.ClientSize = new Size(335, 100);
             form.Controls.AddRange(new Control[] { icon1, label, buttonYes, buttonNo });
-            //form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
             form.MinimizeBox = false;
@@ -1248,75 +1023,38 @@ namespace at3_at9_Converter
             Form form = new Form();
             Label label = new Label();
             Button buttonOK = new Button();
-            //Button buttonWAV = new Button();
-            //Icon icon1;
             PictureBox icon1 = new PictureBox();
-            //TextBox textBox = new TextBox();
 
             if (isDigit == true)
-                //textBox.TypeNumricOnly = true; MessageBoxIcon.Exclamation; 
-
-                //textBox.Width = 1000;
 
             form.Text = title;
             label.Text = promptText;
-            //textBox.Text = value;
 
             buttonOK.Text = "OK";
-            //buttonWAV.Text = "WAV";
             buttonOK.DialogResult = DialogResult.OK;
-            //buttonWAV.DialogResult = DialogResult.Cancel;
             icon1.Image = icon.ToBitmap();
-            //icon1 = icon;
 
             label.SetBounds(60, 22, 290, 17);
-            //textBox.SetBounds(12, 36, 372, 20);
             icon1.SetBounds(15, 15, 35, 35);
             buttonOK.SetBounds(100, 54, 140, 23);
-            //buttonWAV.SetBounds(172, 54, 140, 23);
 
             label.AutoSize = true;
             label.ForeColor = Color.DarkRed;
             label.Font = new Font("Arial", 10, FontStyle.Bold);
             buttonOK.ForeColor = Color.Green;
-            //buttonWAV.ForeColor = Color.Green;
             buttonOK.Font = new Font("Arial", 8, FontStyle.Bold);
-            //buttonWAV.Font = new Font("Arial", 8, FontStyle.Bold);
-            //textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
-            //buttonMP3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            //buttonWAV.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
             form.ClientSize = new Size(335, 100);
             form.Controls.AddRange(new Control[] { icon1, label, buttonOK });
-            //form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
             form.MinimizeBox = false;
             form.MaximizeBox = false;
             form.AcceptButton = buttonOK;
-            //form.CancelButton = buttonWAV;
 
 
 
             DialogResult dialogResult = form.ShowDialog(this);
-            /*switch (dialogResult)
-            {
-                case DialogResult.OK:
-                    if (tabControl1.SelectedTab == tabPage1)
-                    {
-                        radioButton4.Checked = true;
-                        textBox1.Text = fFile;
-                        button2.Enabled = true;
-                    }
-                    else if (tabControl1.SelectedTab == tabPage2)
-                    {
-                        radioButton8.Checked = true;
-                        textBox2.Text = fFile;
-                        button4.Enabled = true;
-                    }
-                    break;
-            }*/
-            //value = textBox.Text;
             return dialogResult;
         }
 
@@ -1329,6 +1067,7 @@ namespace at3_at9_Converter
             LinkLabel.Link link = new LinkLabel.Link();
             link.LinkData = "http://bmk.hamtek-solutions.com/";
             linkLabel2.Links.Add(link);
+            LoadLanguageList();
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -1389,7 +1128,7 @@ namespace at3_at9_Converter
             at3bitRate = comboBox2.Text;
             button4.Enabled = true;
 
-            // Actualizar nombre final con el nuevo bitrate
+            // Update final file name with the new bitrate
             if (!string.IsNullOrEmpty(FileNameSelected))
             {
                 string dirPath = Path.GetDirectoryName(FileNameSelected);
@@ -1404,7 +1143,7 @@ namespace at3_at9_Converter
             at9bitRate = comboBox3.Text;
             button2.Enabled = true;
 
-            // Actualizar nombre final con el nuevo bitrate
+            // Update final file name with the new bitrate
             if (!string.IsNullOrEmpty(FileNameSelected))
             {
                 string dirPath = Path.GetDirectoryName(FileNameSelected);
@@ -1453,50 +1192,6 @@ namespace at3_at9_Converter
             for (int i = 0; i < ps3List.Length; i++) { comboBox2.Items.Add(ps3List[i]); }
             if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
         }
-
-        /*private void pictureBox1_MouseHover(object sender, EventArgs e)
-        {
-            //ToolTip tt = new ToolTip();
-            //tt.SetToolTip(this.pictureBox1, "Your username");
-            //toolTip1.SetToolTip(pictureBox1, "Your username");
-            //this.tip.SetToolTip(this.pictureBox1, "BitRate Channel\n36[kbps] 1ch");
-            /*CustomizedToolTip myToolTip1 = new CustomizedToolTip();
-            CustomizedToolTip.TOOLTIP_WIDTH = 371;
-            CustomizedToolTip.TOOLTIP_HEIGHT = 600;
-            myToolTip1.AutoSize = false;*/
-            //myToolTip1.SetToolTip(pictureBox1, "");
-
-            //myToolTip1.SetToolTip(button2, @"Button 2. Formatted string (w/o image) Created using the verbatim character '@'. End");
-            //myToolTip1.SetToolTip(pictureBox1, @" ");
-            //myToolTip1.SetToolTip(button3, "Button 3. ToolTip with Image is being developed by Kumar, Ravikant India");
-
-            //button1.Tag = Resources.Image;
-            //button3.Tag = Resources.Image;
-            //pictureBox1.Tag = Resources.psvita_bitrate;
-            
-        //}
-
-        /*private void pictureBox2_MouseHover(object sender, EventArgs e)
-        {
-            //ToolTip tt = new ToolTip();
-            //tt.SetToolTip(this.pictureBox1, "Your username");
-            //toolTip1.SetToolTip(pictureBox1, "Your username");
-            //this.tip.SetToolTip(this.pictureBox1, "BitRate Channel\n36[kbps] 1ch");
-            CustomizedToolTip myToolTip2 = new CustomizedToolTip();
-            CustomizedToolTip.TOOLTIP_WIDTH = 701;
-            CustomizedToolTip.TOOLTIP_HEIGHT = 700;
-            myToolTip2.AutoSize = false;
-            //myToolTip1.SetToolTip(pictureBox1, "");
-
-            //myToolTip1.SetToolTip(button2, @"Button 2. Formatted string (w/o image) Created using the verbatim character '@'. End");
-            myToolTip2.SetToolTip(pictureBox2, @" ");
-            //myToolTip1.SetToolTip(button3, "Button 3. ToolTip with Image is being developed by Kumar, Ravikant India");
-
-            //button1.Tag = Resources.Image;
-            //button3.Tag = Resources.Image;
-            pictureBox2.Tag = Resources.psp_ps3_bitrate;
-
-        }*/
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -1550,7 +1245,7 @@ namespace at3_at9_Converter
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error al reproducir: " + ex.Message);
+                    MessageBox.Show("Playback error: " + ex.Message);
                 }
             }
         }
@@ -1569,7 +1264,7 @@ namespace at3_at9_Converter
             button1.Enabled = false;
         }
 
-        private void RunExternalProcess(string fileName, string arguments)
+        private bool RunExternalProcess(string fileName, string arguments)
         {
             try
             {
@@ -1592,10 +1287,10 @@ namespace at3_at9_Converter
                 
                 process.WaitForExit();
 
-                if (process.ExitCode != 0 || !string.IsNullOrEmpty(error) || !string.IsNullOrEmpty(output))
+                if (process.ExitCode != 0 || !string.IsNullOrEmpty(error))
                 {
                     string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
-                    string logEntry = string.Format("\r\n--- {0} ---\r\nArchivo: {1}\r\nComando: {2} {3}\r\nSalida:\r\n{4}\r\nErrores:\r\n{5}\r\n--------------------------\r\n", 
+                    string logEntry = string.Format("\r\n--- {0} ---\r\nFile: {1}\r\nCommand: {2} {3}\r\nOutput:\r\n{4}\r\nErrors:\r\n{5}\r\n--------------------------\r\n", 
                         DateTime.Now.ToString(), fileName, fileName, arguments, output, error);
                     
                     File.AppendAllText(logPath, logEntry);
@@ -1605,15 +1300,148 @@ namespace at3_at9_Converter
                          toolStripStatusLabel1.Text = "Error! Check conversion_errors.log";
                          statusStrip1.Refresh();
                     }
+                    return false;
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
-                File.AppendAllText(logPath, "\r\nEXCEPCIÓN CRÍTICA: " + DateTime.Now.ToString() + " - " + ex.Message + "\r\n");
-                MessageBox.Show("Error crítico al ejecutar la herramienta. Consulta conversion_errors.log", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                File.AppendAllText(logPath, "\r\nCRITICAL EXCEPTION: " + DateTime.Now.ToString() + " - " + ex.Message + "\r\n");
+                MessageBox.Show("Critical error while executing the tool. Check conversion_errors.log", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
+        private void LoadLanguageList()
+        {
+            comboBoxLanguage.Items.Clear();
+
+            string langPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lang");
+
+            if (!Directory.Exists(langPath))
+                Directory.CreateDirectory(langPath);
+
+            string[] files = Directory.GetFiles(langPath, "*.json");
+
+            if (files.Length == 0)
+            {
+                LoadDefaultEnglishLanguage();
+                ApplyLanguage();
+
+                comboBoxLanguage.Items.Clear();
+                comboBoxLanguage.Items.Add("English");
+                comboBoxLanguage.SelectedIndex = 0;
+                comboBoxLanguage.Enabled = false;
+
+                return;
+            }
+
+            foreach (string file in files)
+            {
+                string code = Path.GetFileNameWithoutExtension(file);
+                string json = File.ReadAllText(file, Encoding.UTF8);
+
+                Dictionary<string, string> tempLang =
+                    JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+
+                string languageName = tempLang.ContainsKey("language")
+                    ? tempLang["language"]
+                    : code;
+
+                comboBoxLanguage.Items.Add(new LanguageItem
+                {
+                    Code = code,
+                    Name = languageName
+                });
+            }
+
+            foreach (LanguageItem item in comboBoxLanguage.Items)
+            {
+                if (item.Code.ToLower() == "en")
+                {
+                    comboBoxLanguage.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private void comboBoxLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string langCode = comboBoxLanguage.Text;
+            LoadLanguage(langCode);
+            ApplyLanguage();
+        }
+
+        private void LoadLanguage(string langCode)
+        {
+            string filePath = Path.Combine(languageDir, langCode + ".json");
+
+            if (!File.Exists(filePath))
+                filePath = Path.Combine(languageDir, "en.json");
+
+            string json = File.ReadAllText(filePath, Encoding.UTF8);
+
+            lang = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+        }
+
+        private string T(string key)
+        {
+            return lang.ContainsKey(key) ? lang[key] : key;
+        }
+
+        private void comboBoxLanguage_SelectedIndexChanged_1(object sender, EventArgs e)
+        {
+            if (comboBoxLanguage.SelectedItem is LanguageItem selectedLanguage)
+            {
+                LoadLanguage(selectedLanguage.Code);
+                ApplyLanguage();
+            }
+        }
+
+        private void ApplyLanguage()
+        {
+            tabPage1.Text = T("tab_at9");
+            tabPage2.Text = T("tab_at3");
+            label1.Text = T("drag_drop");
+            label2.Text = T("drag_drop");
+            button2.Text = T("convert");
+            button4.Text = T("convert");
+            button1.Text = T("stop_playing");
+            button3.Text = T("stop_playing");
+            groupBox1.Text = T("conversion_type");
+            groupBox2.Text = T("conversion_type");
+            label3.Text = T("bitrate");
+            label4.Text = T("console_type");
+            label5.Text = T("bitrate");
+            label6.Text = T("console_type");
+        }
+
+        private void LoadDefaultEnglishLanguage()
+        {
+            lang = new Dictionary<string, string>
+            {
+                { "tab_at9", "AT9Tool PSVita/TV & P4" },
+                { "tab_at3", "AT3Tool PSP & PS3" },
+                { "drag_drop", "Drag and drop your file here" },
+                { "convert", "Convert" },
+                { "stop_playing", "Stop Playing" },
+                { "conversion_type", "Select Type Convertion" },
+                { "bitrate", "BitRate [kbps]:" },
+                { "console_type", "Console Type:" },
+                { "language", "English" }
+            };
+        }
+
+        private class LanguageItem
+        {
+            public string Code { get; set; }
+            public string Name { get; set; }
+
+            public override string ToString()
+            {
+                return Name;
+            }
+        }
     }
 }
