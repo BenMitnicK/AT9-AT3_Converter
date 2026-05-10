@@ -253,7 +253,7 @@ namespace at3_at9_Converter
                 FileNameSelected = textBox1.Text;
                 FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
                 FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");             
-                InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
+                InputBox(T("question"), T("format_question"), SystemIcons.Question, true);
                 AskPlayDroppedAT9();
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
@@ -273,7 +273,7 @@ namespace at3_at9_Converter
             }
             else
             {
-                mMessageBox("Informations", "Please select MP3 Or Wav Or at9 File", SystemIcons.Information, true);
+                mMessageBox(T("Informations"), T("invalid_at9_file"), SystemIcons.Information, true);
                 radioButton1.Enabled = false;
                 radioButton2.Enabled = false;
                 radioButton3.Enabled = false;
@@ -287,13 +287,7 @@ namespace at3_at9_Converter
 
         private void AskPlayDroppedAT9()
         {
-            DialogResult result = mInputBox(
-                "Question",
-                "Do you want to play this AT9 file?",
-                SystemIcons.Question,
-                true,
-                8
-            );
+            DialogResult result = mInputBox( T("question"), T("play_at9_question"), SystemIcons.Question, true, 8);
         }
 
         private void VerifExtention_at3()
@@ -318,7 +312,7 @@ namespace at3_at9_Converter
                 FileNameSelected = textBox2.Text;
                 FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
                 FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
-                InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
+                InputBox(T("question"), T("format_question"), SystemIcons.Question, true);
                 AskPlayDroppedAT3();
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
@@ -338,7 +332,7 @@ namespace at3_at9_Converter
             }
             else
             {
-                mMessageBox("Informations", "Please select MP3 Or Wav Or at3 File", SystemIcons.Information, true);
+                mMessageBox(T("information"), T("invalid_at3_file"), SystemIcons.Information, true); 
                 radioButton5.Enabled = false;
                 radioButton6.Enabled = false;
                 radioButton7.Enabled = false;
@@ -352,13 +346,7 @@ namespace at3_at9_Converter
 
         private void AskPlayDroppedAT3()
         {
-            DialogResult result = mInputBox(
-                "Question",
-                "Do you want to play this AT3 file?",
-                SystemIcons.Question,
-                true,
-                9
-            );
+            DialogResult result = mInputBox( T("question"), T("play_at3_question"), SystemIcons.Question, true, 9);
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -419,14 +407,14 @@ namespace at3_at9_Converter
         private void at9DoProcessFileExist()
         {
 
-            mInputBox("Question", "File(s) Exist Do you want to Continue ?", SystemIcons.Question, true, 1); 
+            mInputBox(T("question"), T("file_exists_continue"), SystemIcons.Question, true, 1); 
 
         }
 
         private void at3DoProcessFileExist()
         {
 
-            mInputBox("Question", "File(s) Exist Do you want to Continue ?", SystemIcons.Question, true, 2);
+            mInputBox(T("question"), T("file_exists_continue"), SystemIcons.Question, true, 2);
 
         }
 
@@ -443,7 +431,7 @@ namespace at3_at9_Converter
                     {
                         if (reader.WaveFormat.SampleRate != 48000)
                         {
-                            toolStripStatusLabel1.Text = "Resampling WAV to 48000Hz...";
+                            toolStripStatusLabel1.Text = T("resampling_wav");
                             statusStrip1.Refresh();
                             wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_normalized.wav");
                             using (var resampler = new WaveFormatConversionStream(new WaveFormat(48000, 16, reader.WaveFormat.Channels), reader))
@@ -454,13 +442,13 @@ namespace at3_at9_Converter
                         }
                     }
 
-                    toolStripStatusLabel1.Text = "AT9 in Progress...";
+                    toolStripStatusLabel1.Text = T("at9_progress");
                     statusStrip1.Refresh();
                     REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error during WAV preprocessing: " + ex.Message);
+                    MessageBox.Show(T("wav_preprocess_error") + " " + ex.Message);
                 }
                 finally
                 {
@@ -469,7 +457,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
                 PlayerFile();
             }
@@ -478,7 +466,7 @@ namespace at3_at9_Converter
                 bool REP = false;
                 try
                 {
-                    toolStripStatusLabel1.Text = "Wav in Progress...";
+                    toolStripStatusLabel1.Text = T("wav_progress");
                     statusStrip1.Refresh();
                     REP = RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
                 }
@@ -486,7 +474,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
             }
             else if (radioButton3.Checked == true & textBox1.Text != "")
@@ -494,7 +482,7 @@ namespace at3_at9_Converter
                 bool REP = false;
                 try
                 {
-                    toolStripStatusLabel1.Text = "Wav in Progress...";
+                    toolStripStatusLabel1.Text = T("wav_progress");
                     statusStrip1.Refresh();
                     using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected))
                     {
@@ -503,7 +491,7 @@ namespace at3_at9_Converter
                             WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
                         }
                     }
-                    toolStripStatusLabel1.Text = "AT9 in Progress...";
+                    toolStripStatusLabel1.Text = T("at9_progress");
                     statusStrip1.Refresh();
                     REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
                 }
@@ -512,7 +500,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
                 PlayerFile();
             }
@@ -528,7 +516,7 @@ namespace at3_at9_Converter
                         return;
 
                     DeleteFile();
-                    toolStripStatusLabel1.Text = "Finish!";
+                    toolStripStatusLabel1.Text = T("finish");
                     statusStrip1.Refresh();
 
                 } catch (Exception ex) { MessageBox.Show(ex.Message); }             
@@ -551,7 +539,7 @@ namespace at3_at9_Converter
                     {
                         if (reader.WaveFormat.SampleRate != targetRate || (targetChannels == 2 && reader.WaveFormat.Channels != 2))
                         {
-                            toolStripStatusLabel1.Text = "Normalizing for PSP (44100Hz Stereo)...";
+                            toolStripStatusLabel1.Text = T("normalizing_psp");
                             statusStrip1.Refresh();
                             wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_psp_norm.wav");
                             var outFormat = new WaveFormat(targetRate, 16, (targetChannels == 2) ? 2 : reader.WaveFormat.Channels);
@@ -563,11 +551,11 @@ namespace at3_at9_Converter
                         }
                     }
 
-                    toolStripStatusLabel1.Text = "AT3 in Progress...";
+                    toolStripStatusLabel1.Text = T("at3_progress");
                     statusStrip1.Refresh();
                     REP = RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
                 }
-                catch (Exception ex) { MessageBox.Show("PSP conversion error: " + ex.Message); }
+                catch (Exception ex) { MessageBox.Show(T("psp_conversion_error") + " " + ex.Message); }
                 finally
                 {
                     if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
@@ -575,7 +563,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
                 PlayerFile();
             }
@@ -587,7 +575,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
             }
             else if (radioButton7.Checked == true & textBox2.Text != "")
@@ -606,7 +594,7 @@ namespace at3_at9_Converter
                 if (!REP)
                     return;
 
-                toolStripStatusLabel1.Text = "Finish!";
+                toolStripStatusLabel1.Text = T("finish");
                 statusStrip1.Refresh();
                 PlayerFile();
             }
@@ -622,7 +610,7 @@ namespace at3_at9_Converter
                     if (!REP)
                         return;
 
-                    toolStripStatusLabel1.Text = "Finish!";
+                    toolStripStatusLabel1.Text = T("finish");
                     statusStrip1.Refresh();
 
                 } catch (Exception ex) { MessageBox.Show(ex.Message); }
@@ -674,12 +662,12 @@ namespace at3_at9_Converter
 
         private void DeleteFile()
         {
-            mInputBox("Question", "Do you want to delete WAV file ?", SystemIcons.Question, true, 3); 
+            mInputBox(T("question"), T("delete_wav_question"), SystemIcons.Question, true, 3); 
         }
 
         private void PlayerFile()
         {
-            mInputBox("Question", "Do you want to play file ?", SystemIcons.Question, true, 7);
+            mInputBox(T("question"), T("play_file_question"), SystemIcons.Question, true, 7);
         }
 
         private void tabControl1_SelectedIndexChanged(Object sender, EventArgs e)
@@ -716,7 +704,7 @@ namespace at3_at9_Converter
                 comboBox2.Enabled = false;
                 comboBox3.Enabled = false;
                 comboBox4.Enabled = false;
-                toolStripStatusLabel1.Text = "Ready!";
+                toolStripStatusLabel1.Text = T("ready");
                 statusStrip1.Refresh();
             }
         }
@@ -772,20 +760,32 @@ namespace at3_at9_Converter
             buttonWAV.DialogResult = DialogResult.Cancel;
             icon1.Image = icon.ToBitmap();
 
-            label.SetBounds(50, 22, 290, 17);
-            icon1.SetBounds(15, 15, 35, 35);
-            buttonMP3.SetBounds(24, 54, 140, 23);
-            buttonWAV.SetBounds(172, 54, 140, 23);
-
-            label.AutoSize = true;
+            label.AutoSize = false;
             label.ForeColor = Color.DarkRed;
             label.Font = new Font("Arial", 10, FontStyle.Bold);
+            label.TextAlign = ContentAlignment.MiddleLeft;
+            Size dialogSize = GetDialogSize(promptText, label.Font);
+            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
+            icon1.SetBounds(15, 15, 35, 35);
+
             buttonMP3.ForeColor = Color.Green;
             buttonWAV.ForeColor = Color.Green;
             buttonMP3.Font = new Font("Arial", 8, FontStyle.Bold);
             buttonWAV.Font = new Font("Arial", 8, FontStyle.Bold);
+            buttonMP3.SetBounds(
+                (dialogSize.Width / 2) - 145,
+                dialogSize.Height - 40,
+                140,
+                23
+            );
+            buttonWAV.SetBounds(
+                (dialogSize.Width / 2) + 5,
+                dialogSize.Height - 40,
+                140,
+                23
+            );
 
-            form.ClientSize = new Size(335, 100);
+            form.ClientSize = dialogSize;
             form.Controls.AddRange(new Control[] { icon1, label, buttonMP3, buttonWAV });
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
@@ -878,26 +878,39 @@ namespace at3_at9_Converter
                 form.Text = title;
             label.Text = promptText;
 
-            buttonYes.Text = "Yes";
-            buttonNo.Text = "No";
+            buttonYes.Text = T("yes");
+            buttonNo.Text = T("no");
             buttonYes.DialogResult = DialogResult.OK;
             buttonNo.DialogResult = DialogResult.Cancel;
             icon1.Image = icon.ToBitmap();
 
-            label.SetBounds(50, 22, 290, 17);
-            icon1.SetBounds(15, 15, 35, 35);
-            buttonYes.SetBounds(24, 54, 140, 23);
-            buttonNo.SetBounds(172, 54, 140, 23);
-
-            label.AutoSize = true;
+            label.AutoSize = false;
             label.ForeColor = Color.DarkRed;
             label.Font = new Font("Arial", 10, FontStyle.Bold);
+            label.TextAlign = ContentAlignment.MiddleLeft;
+            Size dialogSize = GetDialogSize(promptText, label.Font);
             buttonYes.ForeColor = Color.Green;
             buttonNo.ForeColor = Color.Green;
             buttonYes.Font = new Font("Arial", 8, FontStyle.Bold);
             buttonNo.Font = new Font("Arial", 8, FontStyle.Bold);
 
-            form.ClientSize = new Size(335, 100);
+            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
+            icon1.SetBounds(15, 15, 35, 35);
+            buttonYes.SetBounds(
+                (dialogSize.Width / 2) - 145,
+                dialogSize.Height - 40,
+                140,
+                23
+            );
+
+            buttonNo.SetBounds(
+                (dialogSize.Width / 2) + 5,
+                dialogSize.Height - 40,
+                140,
+                23
+            );
+
+            form.ClientSize = dialogSize;
             form.Controls.AddRange(new Control[] { icon1, label, buttonYes, buttonNo });
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
@@ -1053,7 +1066,7 @@ namespace at3_at9_Converter
                         {
                             at9Player.Play(FileNameSelected);
 
-                            toolStripStatusLabel1.Text = "Playing AT9...";
+                            toolStripStatusLabel1.Text = T("playing_at9");
                             statusStrip1.Refresh();
 
                             button3.Enabled = true;
@@ -1061,7 +1074,7 @@ namespace at3_at9_Converter
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("AT9 playback error: " + ex.Message);
+                            MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
                         }
                         break;
 
@@ -1097,21 +1110,27 @@ namespace at3_at9_Converter
             form.Text = title;
             label.Text = promptText;
 
-            buttonOK.Text = "OK";
+            buttonOK.Text = T("ok");
             buttonOK.DialogResult = DialogResult.OK;
             icon1.Image = icon.ToBitmap();
 
-            label.SetBounds(60, 22, 290, 17);
-            icon1.SetBounds(15, 15, 35, 35);
-            buttonOK.SetBounds(100, 54, 140, 23);
-
-            label.AutoSize = true;
+            label.AutoSize = false;
             label.ForeColor = Color.DarkRed;
             label.Font = new Font("Arial", 10, FontStyle.Bold);
+            label.TextAlign = ContentAlignment.MiddleLeft;
+            Size dialogSize = GetDialogSize(promptText, label.Font);
             buttonOK.ForeColor = Color.Green;
             buttonOK.Font = new Font("Arial", 8, FontStyle.Bold);
+            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
+            icon1.SetBounds(15, 15, 35, 35);
+            buttonOK.SetBounds(
+                (dialogSize.Width - 140) / 2,
+                dialogSize.Height - 40,
+                140,
+                23
+            );
 
-            form.ClientSize = new Size(335, 100);
+            form.ClientSize = dialogSize;
             form.Controls.AddRange(new Control[] { icon1, label, buttonOK });
             form.FormBorderStyle = FormBorderStyle.FixedDialog;
             form.StartPosition = FormStartPosition.CenterParent;
@@ -1179,7 +1198,7 @@ namespace at3_at9_Converter
                 else if (comboBox4.Text == "PSVita")
                 { 
                     at9tool = "PSVita_at9tool.exe"; button2.Enabled = false; tabPage1PSVitaCombo(); comboBox3.Enabled = true;
-                    MessageBox.Show("If you make theme for PSVita/TV use the BitRate 144 for more compatibility", "Informations", MessageBoxButtons.OK, MessageBoxIcon.Asterisk); 
+                    MessageBox.Show(T("psvita_bitrate_info"), T("information"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk); 
                 }
             }
             else
@@ -1300,7 +1319,7 @@ namespace at3_at9_Converter
 
             if (!File.Exists(fileToPlay))
             {
-                MessageBox.Show("File not found: " + fileToPlay);
+                MessageBox.Show(T("file_not_found") + " " + fileToPlay);
                 return;
             }
 
@@ -1312,13 +1331,13 @@ namespace at3_at9_Converter
                 {
                     at9Player.Play(fileToPlay);
 
-                    toolStripStatusLabel1.Text = "Playing AT9...";
+                    toolStripStatusLabel1.Text = T("playing_at9");
                     statusStrip1.Refresh();
                     button3.Enabled = true;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("AT9 playback error: " + ex.Message);
+                    MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
                 }
 
                 return;
@@ -1340,13 +1359,13 @@ namespace at3_at9_Converter
                     playerProcess.StartInfo = playerStartInfo;
                     playerProcess.Start();
 
-                    toolStripStatusLabel1.Text = "Playing...";
+                    toolStripStatusLabel1.Text = T("playing");
                     statusStrip1.Refresh();
                     button1.Enabled = true;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Playback error: " + ex.Message);
+                    MessageBox.Show(T("playback_error") + " " + ex.Message);
                 }
             }
         }
@@ -1357,7 +1376,7 @@ namespace at3_at9_Converter
             {
                 if (!File.Exists(filePath))
                 {
-                    MessageBox.Show("File not found: " + filePath);
+                    MessageBox.Show(T("file_not_found") + " " + filePath);
                     return;
                 }
 
@@ -1373,7 +1392,7 @@ namespace at3_at9_Converter
                 playerProcess.StartInfo = playerStartInfo;
                 playerProcess.Start();
 
-                toolStripStatusLabel1.Text = "Playing AT3...";
+                toolStripStatusLabel1.Text = T("playing_at3");
                 statusStrip1.Refresh();
 
                 button1.Enabled = true;
@@ -1381,7 +1400,7 @@ namespace at3_at9_Converter
             }
             catch (Exception ex)
             {
-                MessageBox.Show("AT3 playback error: " + ex.Message);
+                MessageBox.Show(T("at3_playback_error") + " " + ex.Message);
             }
         }
 
@@ -1396,7 +1415,7 @@ namespace at3_at9_Converter
 
             playerProcess.Kill();
 
-            toolStripStatusLabel1.Text = "Stop!";
+            toolStripStatusLabel1.Text = T("stop");
             statusStrip1.Refresh();
             button1.Enabled = false;
         }
@@ -1406,7 +1425,7 @@ namespace at3_at9_Converter
 
             at9Player.Stop();
 
-            toolStripStatusLabel1.Text = "Stop!";
+            toolStripStatusLabel1.Text = T("stop");
             statusStrip1.Refresh();
             button3.Enabled = false;
 
@@ -1445,7 +1464,7 @@ namespace at3_at9_Converter
                     
                     if (process.ExitCode != 0)
                     {
-                         toolStripStatusLabel1.Text = "Error! Check conversion_errors.log";
+                         toolStripStatusLabel1.Text = T("conversion_log_error");
                          statusStrip1.Refresh();
                     }
                     return false;
@@ -1456,9 +1475,26 @@ namespace at3_at9_Converter
             {
                 string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
                 File.AppendAllText(logPath, "\r\nCRITICAL EXCEPTION: " + DateTime.Now.ToString() + " - " + ex.Message + "\r\n");
-                MessageBox.Show("Critical error while executing the tool. Check conversion_errors.log", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(T("critical_tool_error"), T("error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
+        }
+
+        private Size GetDialogSize(string text, Font font, int minWidth = 335, int maxWidth = 650)
+        {
+            int textMaxWidth = maxWidth - 80;
+
+            Size textSize = TextRenderer.MeasureText(
+                text,
+                font,
+                new Size(textMaxWidth, 0),
+                TextFormatFlags.WordBreak
+            );
+
+            int width = Math.Max(minWidth, textSize.Width + 90);
+            int height = Math.Max(100, textSize.Height + 95);
+
+            return new Size(width, height);
         }
 
         private void LoadLanguageList()
@@ -1576,7 +1612,41 @@ namespace at3_at9_Converter
                 { "stop_playing", "Stop Playing" },
                 { "conversion_type", "Select Type Convertion" },
                 { "bitrate", "BitRate [kbps]:" },
-                { "console_type", "Console Type:" },
+                { "console_type", "Console Type:" },               
+                { "question", "Question" },
+                { "information", "Information" },
+                { "yes", "Yes" },
+                { "no", "No" },
+                { "ok", "OK" },
+                { "format_question", "What format do you want to convert it to?" },
+                { "file_exists_continue", "File(s) already exist. Do you want to continue?" },
+                { "delete_wav_question", "Do you want to delete the WAV file?" },
+                { "play_file_question", "Do you want to play the file?" },
+                { "play_at9_question", "Do you want to play this AT9 file?" },
+                { "play_at3_question", "Do you want to play this AT3 file?" },
+                { "invalid_at9_file", "Please select an MP3, WAV or AT9 file." },
+                { "invalid_at3_file", "Please select an MP3, WAV or AT3 file." },
+                { "resampling_wav", "Resampling WAV to 48000Hz..." },
+                { "normalizing_psp", "Normalizing for PSP (44100Hz Stereo)..." },
+                { "wav_progress", "WAV in progress..." },
+                { "at9_progress", "AT9 in progress..." },
+                { "at3_progress", "AT3 in progress..." },
+                { "finish", "Finish!" },
+                { "ready", "Ready!" },
+                { "playing", "Playing..." },
+                { "playing_at9", "Playing AT9..." },
+                { "playing_at3", "Playing AT3..." },
+                { "stop", "Stop!" },
+                { "file_not_found", "File not found:" },
+                { "audio_file_not_found", "Audio file not found." },
+                { "playback_error", "Playback error:" },
+                { "at9_playback_error", "AT9 playback error:" },
+                { "at3_playback_error", "AT3 playback error:" },
+                { "wav_preprocess_error", "Error during WAV preprocessing:" },
+                { "psp_conversion_error", "PSP conversion error:" },
+                { "critical_tool_error", "Critical error while executing the tool. Check conversion_errors.log" },
+                { "conversion_log_error", "Error! Check conversion_errors.log" },
+                { "psvita_bitrate_info", "If you make theme for PSVita/TV use the BitRate 144 for more compatibility" },
                 { "language", "English" }
             };
         }
