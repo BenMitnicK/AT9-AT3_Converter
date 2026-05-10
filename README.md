@@ -58,6 +58,6 @@ At9&At3_Converter allows you to convert these sound files to other formats
 
 # Screenshots
 
-![at9_Converter](https://github.com/BenMitnicK/AT9-AT3_Converter/assets/2843334/63f698ad-0753-4d97-ada1-52f6183eaece)
+<img width="412" height="391" alt="at9Converter" src="https://github.com/user-attachments/assets/a0928973-64a7-4d18-9738-a660b1d39569" />
 
-![at3_Converter](https://github.com/BenMitnicK/AT9-AT3_Converter/assets/2843334/14260030-8ea9-499f-aeb2-4d50618840f7)
+<img width="412" height="391" alt="at3Converter" src="https://github.com/user-attachments/assets/35d1cb91-0387-4859-bc52-f6f400a2a25e" />
