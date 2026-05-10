@@ -27,6 +27,8 @@ namespace at3_at9_Converter
         private Dictionary<string, string> lang = new Dictionary<string, string>();
         private string languageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lang");
 
+        private At9Player at9Player = new At9Player();
+
         // ... (remaining existing variables) ...
         public static string dir = "", appdir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), version = "";
         // ... (keep all class variables here) ...
@@ -250,8 +252,9 @@ namespace at3_at9_Converter
             {
                 FileNameSelected = textBox1.Text;
                 FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
+                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");             
                 InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
+                AskPlayDroppedAT9();
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
             {
@@ -282,6 +285,17 @@ namespace at3_at9_Converter
             }
         }
 
+        private void AskPlayDroppedAT9()
+        {
+            DialogResult result = mInputBox(
+                "Question",
+                "Do you want to play this AT9 file?",
+                SystemIcons.Question,
+                true,
+                8
+            );
+        }
+
         private void VerifExtention_at3()
         {
             var regex = new Regex(@"\s");
@@ -305,6 +319,7 @@ namespace at3_at9_Converter
                 FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
                 FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
                 InputBox("Questions", "what format do you want to convert it ?", SystemIcons.Question, true);
+                AskPlayDroppedAT3();
             }
             else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
             {
@@ -334,6 +349,18 @@ namespace at3_at9_Converter
                 textBox2.Text = "";
             }
         }
+
+        private void AskPlayDroppedAT3()
+        {
+            DialogResult result = mInputBox(
+                "Question",
+                "Do you want to play this AT3 file?",
+                SystemIcons.Question,
+                true,
+                9
+            );
+        }
+
         private void button2_Click(object sender, EventArgs e)
         {
   
@@ -444,6 +471,7 @@ namespace at3_at9_Converter
 
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
+                PlayerFile();
             }
             else if (radioButton2.Checked == true & textBox1.Text != "")
             {
@@ -486,6 +514,7 @@ namespace at3_at9_Converter
 
                 toolStripStatusLabel1.Text = "Finish!";
                 statusStrip1.Refresh();
+                PlayerFile();
             }
             else if (radioButton4.Checked == true & textBox1.Text != "")
             {              
@@ -1015,6 +1044,44 @@ namespace at3_at9_Converter
                 }
 
             }
+            else if (z == 8)
+            {
+                switch (dialogResult)
+                {
+                    case DialogResult.OK:
+                        try
+                        {
+                            at9Player.Play(FileNameSelected);
+
+                            toolStripStatusLabel1.Text = "Playing AT9...";
+                            statusStrip1.Refresh();
+
+                            button3.Enabled = true;
+                            //button1.Enabled = false;
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("AT9 playback error: " + ex.Message);
+                        }
+                        break;
+
+                    case DialogResult.Cancel:
+                        break;
+                }
+            }
+            else if (z == 9)
+            {
+                switch (dialogResult)
+                {
+                    case DialogResult.OK:
+                        PlayAT3(FileNameSelected);
+                        break;
+                    case DialogResult.Cancel:
+
+                        break;
+                }
+
+            }
             return dialogResult;
         }
 
@@ -1228,7 +1295,36 @@ namespace at3_at9_Converter
 
         private void mPlayer()
         {
-            if (comboBox1.Text == "PSP")
+
+            string fileToPlay = FileNameFinal;
+
+            if (!File.Exists(fileToPlay))
+            {
+                MessageBox.Show("File not found: " + fileToPlay);
+                return;
+            }
+
+            string ext = Path.GetExtension(fileToPlay).ToLower();
+
+            if (ext == ".at9")
+            {
+                try
+                {
+                    at9Player.Play(fileToPlay);
+
+                    toolStripStatusLabel1.Text = "Playing AT9...";
+                    statusStrip1.Refresh();
+                    button3.Enabled = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("AT9 playback error: " + ex.Message);
+                }
+
+                return;
+            }
+
+            if (ext == ".at3")
             {
                 try
                 {
@@ -1255,6 +1351,40 @@ namespace at3_at9_Converter
             }
         }
 
+        private void PlayAT3(string filePath)
+        {
+            try
+            {
+                if (!File.Exists(filePath))
+                {
+                    MessageBox.Show("File not found: " + filePath);
+                    return;
+                }
+
+                playerProcess = new Process();
+                playerStartInfo = new ProcessStartInfo();
+                playerStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                playerStartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"PLAYER\MiniPlayer.exe");
+                playerStartInfo.Arguments = "\"" + filePath + "\"";
+                playerStartInfo.UseShellExecute = false;
+                playerStartInfo.CreateNoWindow = true;
+                playerStartInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+                playerProcess.StartInfo = playerStartInfo;
+                playerProcess.Start();
+
+                toolStripStatusLabel1.Text = "Playing AT3...";
+                statusStrip1.Refresh();
+
+                button1.Enabled = true;
+                button3.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("AT3 playback error: " + ex.Message);
+            }
+        }
+
         private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             // Send the URL to the operating system.
@@ -1263,10 +1393,23 @@ namespace at3_at9_Converter
 
         private void button1_Click(object sender, EventArgs e)
         {
+
             playerProcess.Kill();
+
             toolStripStatusLabel1.Text = "Stop!";
             statusStrip1.Refresh();
             button1.Enabled = false;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+
+            at9Player.Stop();
+
+            toolStripStatusLabel1.Text = "Stop!";
+            statusStrip1.Refresh();
+            button3.Enabled = false;
+
         }
 
         private bool RunExternalProcess(string fileName, string arguments)
