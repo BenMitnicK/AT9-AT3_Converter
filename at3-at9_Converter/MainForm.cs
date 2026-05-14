@@ -1,20 +1,9 @@
 using at3_at9_Converter.Properties;
-using NAudio;
-using NAudio.Wave;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -25,1123 +14,367 @@ namespace at3_at9_Converter
     {
 
         private Dictionary<string, string> lang = new Dictionary<string, string>();
-        private string languageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lang");
-
-        private At9Player at9Player = new At9Player();
+        private readonly ConversionService conversionService;
+        private readonly ConversionFileService conversionFileService;
+        private readonly LanguageService languageService;
+        private readonly AudioPlayerService audioPlayerService;
+        private readonly At9ConversionWorkflow at9Workflow;
+        private readonly At3ConversionWorkflow at3Workflow;
+        private readonly At9Controller at9Controller;
+        private readonly At3Controller at3Controller;
+        private readonly ConversionState at9State = new ConversionState();
+        private readonly ConversionState at3State = new ConversionState();
+        private readonly HashSet<string> warnedOutdatedLanguages = new HashSet<string>();
+        private readonly Color activeButtonBackColor = Color.FromArgb(37, 99, 235);
+        private readonly Color disabledButtonBackColor = Color.FromArgb(229, 231, 235);
+        private readonly Color disabledButtonForeColor = Color.FromArgb(55, 65, 81);
+        private ConversionMode currentConversionMode = ConversionMode.None;
+        private string currentStatusKey = "ready";
 
         // ... (remaining existing variables) ...
         public static string dir = "", appdir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), version = "";
         // ... (keep all class variables here) ...
 
-        Process playerProcess = new Process();
-        ProcessStartInfo playerStartInfo = new ProcessStartInfo();
-        public string FileNameSelected = "";
-        public string FileNameConvert = "";
-        public string FileNameFinal = "";
-        public string FileNameFinal2 = "";
-        public string VerifFileExtention = "";
-        public string fFile = "";
-        public string FileNameDrop = "";
-        private string pPath = "";
-        private string nFile = "";
-        private string fFileOrig = "";
-        private string at3tool = "";
-        private string at9tool = "";
-        private string at3bitRate = "";
-        private string at9bitRate = "";
-
-        string[] consoleListAt3 = new string[] { 
-            "PSP",
-            "PS3"
-        };
-
-        string[] consoleListAt9 = new string[] { 
-            "PS4",
-            "PSVita"
-        };
-
-        string[] pspList = new string[] { 
-            "32",
-            "48",
-            "52",
-            "64",
-            "66",
-            "96",
-            "105",
-            "128",
-            "132" ,          
-            "160",
-            "192",
-            "256",
-            "320",
-            "352"
-        };
-
-        string[] ps3List = new string[] { 
-            "32",
-            "48",
-            "57",
-            "64",
-            "72",
-            "96",
-            "114",
-            "128",
-            "144",
-            "160",
-            "192",
-            "256",
-            "320",
-            "384",
-            "512",
-            "768"
-        };
-
-        string[] psvitaList = new string[] { 
-            "36",
-            "48",
-            "60",
-            "72",
-            "84",
-            "96",
-            "120",
-            "144",
-            "168",
-            "192"
-        };
-
-        string[] ps4List = new string[] { 
-            "36",
-            "48",
-            "60",
-            "72",
-            "84",
-            "96",
-            "120",
-            "144",
-            "168",
-            "192",
-            "240",
-            "288",
-            "300",
-            "384",
-            "336",
-            "360",
-            "384",
-            "420",
-            "480",
-            "504",
-            "672"
-        };
+        private ConversionState CurrentState
+        {
+            get
+            {
+                return ConversionModeInfo.IsAt3Mode(currentConversionMode) ? at3State : at9State;
+            }
+        }
 
         public MainForm()
         {
+            conversionService = new ConversionService(AppDomain.CurrentDomain.BaseDirectory);
+            conversionFileService = new ConversionFileService(AppDomain.CurrentDomain.BaseDirectory);
+            languageService = new LanguageService(AppDomain.CurrentDomain.BaseDirectory);
+            audioPlayerService = new AudioPlayerService(AppDomain.CurrentDomain.BaseDirectory);
+            at9Workflow = new At9ConversionWorkflow(conversionService);
+            at3Workflow = new At3ConversionWorkflow(conversionService);
+            at9Controller = new At9Controller(at9Workflow, at9State);
+            at3Controller = new At3Controller(at3Workflow, at3State);
+
             InitializeComponent();
-            this.tabPage1.AllowDrop = true;
-            this.tabPage1.DragEnter += new DragEventHandler(tabPage1_DragEnter);
-            this.tabPage1.DragDrop += new DragEventHandler(tabPage1_DragDrop);
-            this.tabPage2.AllowDrop = true;
-            this.tabPage2.DragEnter += new DragEventHandler(tabPage2_DragEnter);
-            this.tabPage2.DragDrop += new DragEventHandler(tabPage2_DragDrop);
-            tabControl1.SelectedIndexChanged += tabControl1_SelectedIndexChanged;
+            audioPlayerService.At9PlaybackStopped += At9Player_PlaybackStopped;
+            this.dropLabel.AllowDrop = true;
+            this.dropLabel.DragEnter += new DragEventHandler(conversionDropLabel_DragEnter);
+            this.dropLabel.DragDrop += new DragEventHandler(conversionDropLabel_DragDrop);
+            this.FormClosed += MainForm_FormClosed;
    
         }
 
-        void tabPage1_DragEnter(object sender, DragEventArgs e)
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            audioPlayerService.At9PlaybackStopped -= At9Player_PlaybackStopped;
+            audioPlayerService.Dispose();
+        }
+
+        void conversionDropLabel_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
         }
 
-        void tabPage1_DragDrop(object sender, DragEventArgs e)
+        void conversionDropLabel_DragDrop(object sender, DragEventArgs e)
         {
-            //var regex = new Regex(@"\s");
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            //foreach (string file in files) Console.WriteLine(file);
-            fFileOrig = "";
-            pPath = "";
-            textBox1.Text = "";
-            VerifFileExtention = "";
-            fFile = "";
-            foreach (string file in files) {
+            if (files == null || files.Length == 0)
+                return;
 
-                fFileOrig += Path.GetFileName(file);
-                pPath = Path.GetDirectoryName(file);
-                textBox1.Text = file;
-
-            } 
-            
-                VerifFileExtention = textBox1.Text.Substring(textBox1.Text.LastIndexOf((".")));
-                fFile = textBox1.Text;
-                VerifExtention_at9();
-            
+            LoadDroppedFile(files[0]);
         }
 
-        void tabPage2_DragEnter(object sender, DragEventArgs e)
+        private void LoadDroppedFile(string file)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
-        }
+            ResetConversionUi();
+            filePathTextBox.Text = file;
 
-        void tabPage2_DragDrop(object sender, DragEventArgs e)
-        {
-            //var regex = new Regex(@"\s");
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            //foreach (string file in files) Console.WriteLine(file);
-            fFileOrig = "";
-            pPath = "";
-            textBox2.Text = "";
-            VerifFileExtention = "";
-            fFile = "";
-            foreach (string file in files)
+            string extension = Path.GetExtension(file).ToLower();
+            if (extension == ".at9")
             {
-                fFileOrig += Path.GetFileName(file);
-                pPath = Path.GetDirectoryName(file);
-                textBox2.Text = file;
-
-            } 
-                VerifFileExtention = textBox2.Text.Substring(textBox2.Text.LastIndexOf((".")));
-                fFile = textBox2.Text;
-                VerifExtention_at3();            
-        }
-
-        private static String sReplace(String ffFile)
-        {
-           
-            ffFile = ffFile.Replace(" ", "-");
-            return ffFile;
-
-        }
-
-        private void rRename()
-        {
-            nFile = "";
-            if (tabControl1.SelectedIndex == 0)
-            {
-            nFile = sReplace(fFileOrig);
-            System.IO.File.Move(dir + "\\" + fFileOrig, dir + "\\" + nFile);
-                fFile = dir + "\\" + nFile;
-                fFileOrig = nFile;
-                
-            }
-            else if (tabControl1.SelectedIndex == 1)
-            {
-                nFile = sReplace(fFileOrig);
-                System.IO.File.Move(textBox2.Text, pPath + "\\" + nFile);
-                fFile = textBox2.Text;
-                fFileOrig = nFile;
-            }
-
-        }
-
-        private void VerifExtention_at9()
-        {
-            var regex = new Regex(@"\s");
-            if (VerifFileExtention.Equals(".wav") || VerifFileExtention.Equals(".WAV"))
-            {
-                FileNameSelected = textBox1.Text;
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at9");
-                
-                radioButton2.Enabled = false;
-                radioButton3.Enabled = false;
-                radioButton4.Enabled = false;
-                radioButton1.Enabled = true;
-                radioButton1.Checked = true;
-                tabPage1ConsoleCombo();
-                comboBox3.Items.Clear();
-                comboBox4.Enabled = true;
-            }
-            else if (VerifFileExtention.Equals(".at9") || VerifFileExtention.Equals(".AT9"))
-            {
-                FileNameSelected = textBox1.Text;
-                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");             
-                InputBox(T("question"), T("format_question"), SystemIcons.Question, true);
+                at9Controller.LoadFile(file);
+                SelectEncodedAt9Mode();
                 AskPlayDroppedAT9();
+                return;
             }
-            else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
+
+            if (extension == ".at3")
             {
-                FileNameSelected = textBox1.Text;
-                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at9");
-                
-                radioButton1.Enabled = false;
-                radioButton2.Enabled = false;
-                radioButton4.Enabled = false;
-                radioButton3.Enabled = true;
-                radioButton3.Checked = true;
-                tabPage1ConsoleCombo();
-                comboBox3.Items.Clear();
-                comboBox4.Enabled = true;
+                at3Controller.LoadFile(file);
+                SelectEncodedAt3Mode();
+                AskPlayDroppedAT3();
+                return;
             }
-            else
+
+            if (extension == ".wav")
             {
-                mMessageBox(T("Informations"), T("invalid_at9_file"), SystemIcons.Information, true);
-                radioButton1.Enabled = false;
-                radioButton2.Enabled = false;
-                radioButton3.Enabled = false;
-                radioButton4.Enabled = false;
-                button2.Enabled = false;                      
-                comboBox3.Enabled = false;
-                comboBox4.Enabled = false;
-                textBox1.Text = "";
+                SelectTargetCodec(
+                    ConversionMode.WavToAt9,
+                    ConversionMode.WavToAt3,
+                    () => at9Controller.LoadFile(file),
+                    () => at3Controller.LoadFile(file));
+                return;
             }
+
+            if (extension == ".mp3")
+            {
+                SelectTargetCodec(
+                    ConversionMode.Mp3ToAt9,
+                    ConversionMode.Mp3ToAt3,
+                    () => at9Controller.LoadFile(file),
+                    () => at3Controller.LoadFile(file));
+                return;
+            }
+
+            mMessageBox(T("information"), T("invalid_audio_file"), SystemIcons.Information, true);
+            ResetConversionUi();
+        }
+
+        private void SelectTargetCodec(ConversionMode at9Mode, ConversionMode at3Mode, Action loadAt9, Action loadAt3)
+        {
+            DialogResult result = DialogService.ShowTargetCodecDialog(this, T("question"), T("target_format_question"), SystemIcons.Question);
+            if (result == DialogResult.OK)
+            {
+                loadAt9();
+                SetConversionMode(at9Mode);
+                ConfigureConsoleSelection(ConversionOptions.At9Consoles);
+                return;
+            }
+
+            loadAt3();
+            SetConversionMode(at3Mode);
+            ConfigureConsoleSelection(ConversionOptions.At3Consoles);
+        }
+
+        private void SelectEncodedAt9Mode()
+        {
+            DialogResult result = DialogService.ShowFormatDialog(this, T("question"), T("format_question"), SystemIcons.Question);
+            SetConversionMode(result == DialogResult.OK ? ConversionMode.At9ToMp3 : ConversionMode.At9ToWav);
+            ConfigureConsoleSelection(ConversionOptions.At9Consoles);
+        }
+
+        private void SelectEncodedAt3Mode()
+        {
+            DialogResult result = DialogService.ShowFormatDialog(this, T("question"), T("format_question"), SystemIcons.Question);
+            SetConversionMode(result == DialogResult.OK ? ConversionMode.At3ToMp3 : ConversionMode.At3ToWav);
+            ConfigureConsoleSelection(ConversionOptions.At3Consoles);
         }
 
         private void AskPlayDroppedAT9()
         {
-            DialogResult result = mInputBox( T("question"), T("play_at9_question"), SystemIcons.Question, true, 8);
-        }
-
-        private void VerifExtention_at3()
-        {
-            var regex = new Regex(@"\s");
-            if (VerifFileExtention.Equals(".wav") || VerifFileExtention.Equals(".WAV"))
-            {
-                FileNameSelected = textBox2.Text;
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at3");
-                
-                radioButton6.Enabled = false;
-                radioButton7.Enabled = false;
-                radioButton8.Enabled = false;
-                radioButton5.Enabled = true;
-                radioButton5.Checked = true;
-                tabPage2ConsoleCombo();
-                comboBox2.Items.Clear();
-                comboBox1.Enabled = true;
-            }
-            else if (VerifFileExtention.Equals(".at3") || VerifFileExtention.Equals(".AT3"))
-            {
-                FileNameSelected = textBox2.Text;
-                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".mp3");
-                InputBox(T("question"), T("format_question"), SystemIcons.Question, true);
-                AskPlayDroppedAT3();
-            }
-            else if (VerifFileExtention.Equals(".mp3") || VerifFileExtention.Equals(".MP3"))
-            {
-                FileNameSelected = textBox2.Text;
-                FileNameFinal2 = Path.ChangeExtension(FileNameSelected, ".wav");
-                FileNameFinal = Path.ChangeExtension(FileNameSelected, ".at3");
-                
-                radioButton5.Enabled = false;
-                radioButton6.Enabled = false;
-                radioButton8.Enabled = false;
-                radioButton7.Enabled = true;
-                radioButton7.Checked = true;
-                tabPage2ConsoleCombo();
-                comboBox2.Items.Clear();
-                comboBox1.Enabled = true;
-            }
-            else
-            {
-                mMessageBox(T("information"), T("invalid_at3_file"), SystemIcons.Information, true); 
-                radioButton5.Enabled = false;
-                radioButton6.Enabled = false;
-                radioButton7.Enabled = false;
-                radioButton8.Enabled = false;
-                button4.Enabled = false;
-                comboBox1.Enabled = false;               
-                comboBox2.Enabled = false;                
-                textBox2.Text = "";
-            }
+            ConfirmPlayDroppedAt9();
         }
 
         private void AskPlayDroppedAT3()
         {
-            DialogResult result = mInputBox( T("question"), T("play_at3_question"), SystemIcons.Question, true, 9);
+            ConfirmPlayDroppedAt3();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private async void convertButton_Click(object sender, EventArgs e)
         {
-  
-            if (radioButton3.Checked == true || radioButton4.Checked == true)
+            if (currentConversionMode == ConversionMode.None)
+                return;
+
+            if (!ConfirmOverwriteExistingFiles())
+                return;
+
+            await DoConversion();
+        }
+
+        private bool ConfirmOverwriteExistingFiles()
+        {
+            if (ShouldConfirmIntermediateWav() && File.Exists(CurrentState.IntermediateWavFile))
             {
-            if (System.IO.File.Exists(FileNameFinal) || System.IO.File.Exists(FileNameFinal2))
-            {
-                at9DoProcessFileExist();
+                if (Confirm(T("wav_exists_continue")) != DialogResult.OK)
+                    return false;
             }
+
+            string finalOutputFile = GetFinalOutputFile();
+            if (File.Exists(finalOutputFile))
+            {
+                if (Confirm(T("file_exists_continue")) != DialogResult.OK)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool ShouldConfirmIntermediateWav()
+        {
+            return currentConversionMode == ConversionMode.Mp3ToAt9
+                || currentConversionMode == ConversionMode.Mp3ToAt3
+                || currentConversionMode == ConversionMode.At9ToMp3
+                || currentConversionMode == ConversionMode.At3ToMp3;
+        }
+
+        private string GetFinalOutputFile()
+        {
+            if (currentConversionMode == ConversionMode.At9ToWav
+                || currentConversionMode == ConversionMode.At3ToWav)
+                return CurrentState.IntermediateWavFile;
+
+            return CurrentState.FinalFile;
+        }
+
+        private async Task DoConversion()
+        {
+            if (filePathTextBox.Text == "")
+                return;
+
+            ConversionWorkflowResult result;
+            if (ConversionModeInfo.IsAt9Mode(currentConversionMode))
+                result = await at9Controller.ConvertAsync(GetAt9ConversionMode(), SetStatus);
             else
-            {
-                at9DoProcess();
-            }
-            }
-            else if (radioButton1.Checked == true || radioButton2.Checked == true)
-            {
-                if (System.IO.File.Exists(FileNameFinal))
-                {
-                    at9DoProcessFileExist();
-                }
-                else
-                {
-                    at9DoProcess();
-                }
-            }
-            
+                result = await at3Controller.ConvertAsync(GetAt3ConversionMode(), consoleComboBox.Text, SetStatus);
+
+
+            HandleWorkflowResult(result);
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private At9ConversionMode GetAt9ConversionMode()
         {
-
-            if (radioButton7.Checked == true || radioButton8.Checked == true)
+            switch (currentConversionMode)
             {
-                if (System.IO.File.Exists(FileNameFinal) || System.IO.File.Exists(FileNameFinal2))
-                {
-                    at3DoProcessFileExist();
-                }
-                else
-                {
-                    at3DoProcess();
-                }
-            }
-            else if (radioButton5.Checked == true || radioButton6.Checked == true)
-            {
-                if (System.IO.File.Exists(FileNameFinal))
-                {
-                    at3DoProcessFileExist();
-                }
-                else
-                {
-                    at3DoProcess();
-                }
+                case ConversionMode.WavToAt9:
+                    return At9ConversionMode.WavToAt9;
+                case ConversionMode.At9ToWav:
+                    return At9ConversionMode.At9ToWav;
+                case ConversionMode.Mp3ToAt9:
+                    return At9ConversionMode.Mp3ToAt9;
+                default:
+                    return At9ConversionMode.At9ToMp3;
             }
         }
 
-        private void at9DoProcessFileExist()
+        private At3ConversionMode GetAt3ConversionMode()
         {
-
-            mInputBox(T("question"), T("file_exists_continue"), SystemIcons.Question, true, 1); 
-
-        }
-
-        private void at3DoProcessFileExist()
-        {
-
-            mInputBox(T("question"), T("file_exists_continue"), SystemIcons.Question, true, 2);
-
-        }
-
-        private void at9DoProcess()
-        {
-            if (radioButton1.Checked == true & textBox1.Text != "")
+            switch (currentConversionMode)
             {
-                string wavToProcess = FileNameSelected;
-                bool isTempWav = false;
-                bool REP = false;
-                try
-                {
-                    using (var reader = new WaveFileReader(FileNameSelected))
-                    {
-                        if (reader.WaveFormat.SampleRate != 48000)
-                        {
-                            toolStripStatusLabel1.Text = T("resampling_wav");
-                            statusStrip1.Refresh();
-                            wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_normalized.wav");
-                            using (var resampler = new WaveFormatConversionStream(new WaveFormat(48000, 16, reader.WaveFormat.Channels), reader))
-                            {
-                                WaveFileWriter.CreateWaveFile(wavToProcess, resampler);
-                            }
-                            isTempWav = true;
-                        }
-                    }
-
-                    toolStripStatusLabel1.Text = T("at9_progress");
-                    statusStrip1.Refresh();
-                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(T("wav_preprocess_error") + " " + ex.Message);
-                }
-                finally
-                {
-                    if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
-                }
-                if (!REP)
-                    return;
-
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-                PlayerFile();
-            }
-            else if (radioButton2.Checked == true & textBox1.Text != "")
-            {
-                bool REP = false;
-                try
-                {
-                    toolStripStatusLabel1.Text = T("wav_progress");
-                    statusStrip1.Refresh();
-                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
-                }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-                if (!REP)
-                    return;
-
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-            }
-            else if (radioButton3.Checked == true & textBox1.Text != "")
-            {
-                bool REP = false;
-                try
-                {
-                    toolStripStatusLabel1.Text = T("wav_progress");
-                    statusStrip1.Refresh();
-                    using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected))
-                    {
-                        using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(48000, 16, mp3.WaveFormat.Channels), mp3))
-                        {
-                            WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                        }
-                    }
-                    toolStripStatusLabel1.Text = T("at9_progress");
-                    statusStrip1.Refresh();
-                    REP = RunExternalProcess(@"ATRAC\" + at9tool, " -e -br " + at9bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
-                }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-                DeleteFile();
-                if (!REP)
-                    return;
-
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-                PlayerFile();
-            }
-            else if (radioButton4.Checked == true & textBox1.Text != "")
-            {              
-                try {
-                    bool REP = RunExternalProcess(@"ATRAC\" + at9tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
-                    if (!REP)
-                        return;
-
-                    REP = RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
-                    if (!REP)
-                        return;
-
-                    DeleteFile();
-                    toolStripStatusLabel1.Text = T("finish");
-                    statusStrip1.Refresh();
-
-                } catch (Exception ex) { MessageBox.Show(ex.Message); }             
+                case ConversionMode.WavToAt3:
+                    return At3ConversionMode.WavToAt3;
+                case ConversionMode.At3ToWav:
+                    return At3ConversionMode.At3ToWav;
+                case ConversionMode.Mp3ToAt3:
+                    return At3ConversionMode.Mp3ToAt3;
+                default:
+                    return At3ConversionMode.At3ToMp3;
             }
         }
 
-        private void at3DoProcess()
+        private void HandleWorkflowResult(ConversionWorkflowResult result)
         {
-            if (radioButton5.Checked == true & textBox2.Text != "")
+            if (!result.Succeeded)
             {
-                string wavToProcess = FileNameSelected;
-                bool isTempWav = false;
-                bool REP = false;
-                try
+                if (!string.IsNullOrEmpty(result.ErrorMessage))
                 {
-                    int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
-                    int targetChannels = (comboBox1.Text == "PSP") ? 2 : 0; 
+                    string message = string.IsNullOrEmpty(result.ErrorKey)
+                        ? result.ErrorMessage
+                        : T(result.ErrorKey) + " " + result.ErrorMessage;
 
-                    using (var reader = new WaveFileReader(FileNameSelected))
-                    {
-                        if (reader.WaveFormat.SampleRate != targetRate || (targetChannels == 2 && reader.WaveFormat.Channels != 2))
-                        {
-                            toolStripStatusLabel1.Text = T("normalizing_psp");
-                            statusStrip1.Refresh();
-                            wavToProcess = Path.Combine(Path.GetDirectoryName(FileNameSelected), "temp_psp_norm.wav");
-                            var outFormat = new WaveFormat(targetRate, 16, (targetChannels == 2) ? 2 : reader.WaveFormat.Channels);
-                            using (var resampler = new WaveFormatConversionStream(outFormat, reader))
-                            {
-                                WaveFileWriter.CreateWaveFile(wavToProcess, resampler);
-                            }
-                            isTempWav = true;
-                        }
-                    }
-
-                    toolStripStatusLabel1.Text = T("at3_progress");
-                    statusStrip1.Refresh();
-                    REP = RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + wavToProcess + "\" \"" + FileNameFinal + "\"");
+                    MessageBox.Show(message);
                 }
-                catch (Exception ex) { MessageBox.Show(T("psp_conversion_error") + " " + ex.Message); }
-                finally
-                {
-                    if (isTempWav && File.Exists(wavToProcess)) File.Delete(wavToProcess);
-                }
-                if (!REP)
-                    return;
 
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-                PlayerFile();
+                return;
             }
-            else if (radioButton6.Checked == true & textBox2.Text != "")
-            {
-                bool REP = false;
-                try { REP = RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\""); }
-                catch (Exception ex) { MessageBox.Show(ex.Message); }
-                if (!REP)
-                    return;
 
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-            }
-            else if (radioButton7.Checked == true & textBox2.Text != "")
-            {
-                bool REP = false;
-                try {
-                    int targetRate = (comboBox1.Text == "PSP") ? 44100 : 48000;
-                    using (Mp3FileReader mp3 = new Mp3FileReader(FileNameSelected)) {
-                        using (WaveStream pcm = new WaveFormatConversionStream(new WaveFormat(targetRate, 16, mp3.WaveFormat.Channels), mp3)) {
-                            WaveFileWriter.CreateWaveFile(FileNameFinal2, pcm);
-                        }
-                    }
-                    REP = RunExternalProcess(@"ATRAC\" + at3tool, " -e -br " + at3bitRate + " -wholeloop \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
-                } catch (Exception ex) { MessageBox.Show(ex.Message); }
-                DeleteFile();
-                if (!REP)
-                    return;
+            if (result.AskDeleteWav)
+                ConfirmDeleteWav();
 
-                toolStripStatusLabel1.Text = T("finish");
-                statusStrip1.Refresh();
-                PlayerFile();
-            }
-            else if (radioButton8.Checked == true & textBox2.Text != "")
-            {
-                try {
-                    bool REP = RunExternalProcess(@"ATRAC\" + at3tool, " -d \"" + FileNameSelected + "\" \"" + FileNameFinal2 + "\"");
-                    if (!REP)
-                        return;
+            SetStatus("finish");
 
-                    REP = RunExternalProcess(@"LAME\lame.exe", "-V2 \"" + FileNameFinal2 + "\" \"" + FileNameFinal + "\"");
-                    DeleteFile();
-                    if (!REP)
-                        return;
-
-                    toolStripStatusLabel1.Text = T("finish");
-                    statusStrip1.Refresh();
-
-                } catch (Exception ex) { MessageBox.Show(ex.Message); }
-            }
+            if (result.AskPlay)
+                ConfirmPlayFile();
         }
 
-        private void mMoveFile()
+        private void SetStatus(string key)
         {
+            currentStatusKey = key;
+            statusLabel.Text = T(key);
+            mainStatusStrip.Refresh();
+        }
+
+        private void ConfirmDeleteWav()
+        {
+            if (Confirm(T("delete_wav_question")) == DialogResult.OK)
+            {
+                conversionFileService.DeleteIntermediateWavAndMoveFinal(CurrentState);
+                return;
+            }
+
+            conversionFileService.MoveFinalAndIntermediateFiles(CurrentState);
+        }
+
+        private void ConfirmPlayFile()
+        {
+            if (Confirm(T("play_file_question")) == DialogResult.OK)
+                mPlayer();
+        }
+
+        private void SetConversionMode(ConversionMode mode)
+        {
+            currentConversionMode = mode;
+            string modeText = ConversionModeInfo.GetDisplayText(mode);
+            conversionModeLabel.Text = string.IsNullOrEmpty(modeText)
+                ? T("conversion_mode_empty")
+                : T("conversion_mode_prefix") + " " + modeText;
+        }
+
+        private void ConfigureConsoleSelection(string[] consoles)
+        {
+            consoleComboBox.Items.Clear();
+            bitrateComboBox.Items.Clear();
+            consoleComboBox.Enabled = ConversionModeInfo.NeedsConsole(currentConversionMode);
+            bitrateComboBox.Enabled = false;
+            SetConvertButtonEnabled(false);
+            FillComboBox(consoleComboBox, consoles, false);
+            UpdateConsoleImages();
+        }
+
+        private void ResetConversionUi()
+        {
+            at9State.Reset();
+            at3State.Reset();
+            SetConversionMode(ConversionMode.None);
+            filePathTextBox.Text = "";
+            consoleComboBox.Items.Clear();
+            bitrateComboBox.Items.Clear();
+            consoleComboBox.Enabled = false;
+            bitrateComboBox.Enabled = false;
+            SetConvertButtonEnabled(false);
+            UpdateConsoleImages();
+            SetStatus("ready");
+        }
+
+        private DialogResult Confirm(string promptText)
+        {
+            return DialogService.ShowYesNoDialog(this, T("question"), promptText, SystemIcons.Question, T("yes"), T("no"));
+        }
+
+        private void ConfirmPlayDroppedAt9()
+        {
+            if (Confirm(T("play_at9_question")) != DialogResult.OK)
+                return;
+
             try
             {
-                string fileName = Path.GetFileName(FileNameFinal);
-                string sourcePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-                string destPath = FileNameFinal; // FileNameFinal already contains the correct full path
-
-                // If the file was created in the program folder but the destination is different
-                if (File.Exists(sourcePath) && sourcePath.ToLower() != destPath.ToLower())
-                {
-                    if (File.Exists(destPath)) File.Delete(destPath);
-                    File.Move(sourcePath, destPath);
-                }
+                audioPlayerService.PlayAt9(at9State.SelectedFile);
+                SetStatus("playing_at9");
+                SetStopButtonEnabled(true);
             }
             catch (Exception ex)
             {
-                // Only log real errors to avoid bothering the user
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log"), 
-                    "\r\nError in mMoveFile: " + ex.Message);
+                MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
             }
         }
 
-        private void mMoveFile2()
+        private void ConfirmPlayDroppedAt3()
         {
-            // This function was called when the user chose NOT to delete the WAV file
-            // Simply make sure the files are where they should be
-            try
-            {
-                mMoveFile();
-                // If a second final file exists, such as MP3 -> AT3 + WAV
-                if (!string.IsNullOrEmpty(FileNameFinal2)) {
-                    string fileName2 = Path.GetFileName(FileNameFinal2);
-                    string sourcePath2 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName2);
-                    string destPath2 = FileNameFinal2;
-                    if (File.Exists(sourcePath2) && sourcePath2.ToLower() != destPath2.ToLower()) {
-                        if (File.Exists(destPath2)) File.Delete(destPath2);
-                        File.Move(sourcePath2, destPath2);
-                    }
-                }
-            } catch { }
-        }
-
-        private void DeleteFile()
-        {
-            mInputBox(T("question"), T("delete_wav_question"), SystemIcons.Question, true, 3); 
-        }
-
-        private void PlayerFile()
-        {
-            mInputBox(T("question"), T("play_file_question"), SystemIcons.Question, true, 7);
-        }
-
-        private void tabControl1_SelectedIndexChanged(Object sender, EventArgs e)
-        {
-
-            if (textBox1.Text != "" || textBox2.Text != "" || radioButton1.Checked == true || radioButton2.Checked == true || radioButton3.Checked == true || radioButton4.Checked == true || radioButton5.Checked == true || radioButton6.Checked == true || radioButton7.Checked == true || radioButton8.Checked == true)
-            { 
-                
-                textBox1.Text = ""; 
-                textBox2.Text = ""; 
-                button2.Enabled = false;
-                button4.Enabled = false; 
-                radioButton1.Checked = false; 
-                radioButton2.Checked = false; 
-                radioButton3.Checked = false; 
-                radioButton4.Checked = false;
-                radioButton5.Checked = false;
-                radioButton6.Checked = false;
-                radioButton7.Checked = false;
-                radioButton8.Checked = false;
-                radioButton1.Enabled = false;
-                radioButton2.Enabled = false;
-                radioButton3.Enabled = false;
-                radioButton4.Enabled = false;
-                radioButton5.Enabled = false;
-                radioButton6.Enabled = false;
-                radioButton7.Enabled = false;
-                radioButton8.Enabled = false;
-                comboBox1.Items.Clear();
-                comboBox2.Items.Clear();
-                comboBox3.Items.Clear();
-                comboBox4.Items.Clear();
-                comboBox1.Enabled = false;
-                comboBox2.Enabled = false;
-                comboBox3.Enabled = false;
-                comboBox4.Enabled = false;
-                toolStripStatusLabel1.Text = T("ready");
-                statusStrip1.Refresh();
-            }
-        }
-
-        private void radioButton1_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton2_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton3_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton4_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton5_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton6_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton7_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private void radioButton8_CheckedChanged(object sender, EventArgs e)
-        {
-        }
-
-        private DialogResult InputBox(string title, string promptText, Icon icon, bool isDigit = false)
-        {
-            Form form = new Form();
-            Label label = new Label();
-            Button buttonMP3 = new Button();   
-            Button buttonWAV = new Button();
-            PictureBox icon1 = new PictureBox();
-
-            if (isDigit == true)
-
-            form.Text = title;
-            label.Text = promptText;
-
-            buttonMP3.Text = "MP3";
-            buttonWAV.Text = "WAV";
-            buttonMP3.DialogResult = DialogResult.OK;
-            buttonWAV.DialogResult = DialogResult.Cancel;
-            icon1.Image = icon.ToBitmap();
-
-            label.AutoSize = false;
-            label.ForeColor = Color.DarkRed;
-            label.Font = new Font("Arial", 10, FontStyle.Bold);
-            label.TextAlign = ContentAlignment.MiddleLeft;
-            Size dialogSize = GetDialogSize(promptText, label.Font);
-            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
-            icon1.SetBounds(15, 15, 35, 35);
-
-            buttonMP3.ForeColor = Color.Green;
-            buttonWAV.ForeColor = Color.Green;
-            buttonMP3.Font = new Font("Arial", 8, FontStyle.Bold);
-            buttonWAV.Font = new Font("Arial", 8, FontStyle.Bold);
-            buttonMP3.SetBounds(
-                (dialogSize.Width / 2) - 145,
-                dialogSize.Height - 40,
-                140,
-                23
-            );
-            buttonWAV.SetBounds(
-                (dialogSize.Width / 2) + 5,
-                dialogSize.Height - 40,
-                140,
-                23
-            );
-
-            form.ClientSize = dialogSize;
-            form.Controls.AddRange(new Control[] { icon1, label, buttonMP3, buttonWAV });
-            form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterParent;
-            form.MinimizeBox = false;
-            form.MaximizeBox = false;
-            form.AcceptButton = buttonMP3;
-            form.CancelButton = buttonWAV;
-
-            
-
-            DialogResult dialogResult = form.ShowDialog(this);
-            switch (dialogResult)
-            {
-                case DialogResult.OK:
-                    if (tabControl1.SelectedTab == tabPage1)
-                    {
-                        radioButton1.Enabled = false;
-                        radioButton2.Enabled = false;
-                        radioButton3.Enabled = false;
-                        radioButton4.Enabled = true;
-                        radioButton4.Checked = true;
-                        comboBox3.Items.Clear();
-                        comboBox4.Items.Clear();
-                        comboBox3.Enabled = false;
-                        comboBox4.Enabled = true;
-                        tabPage1ConsoleCombo();
-                        textBox1.Text = fFile;
-                    }
-                    else if (tabControl1.SelectedTab == tabPage2)
-                    {
-                        radioButton5.Enabled = false;
-                        radioButton6.Enabled = false;
-                        radioButton7.Enabled = false;
-                        radioButton8.Enabled = true;
-                        radioButton8.Checked = true;
-                        comboBox1.Items.Clear();
-                        comboBox2.Items.Clear();
-                        comboBox1.Enabled = true;
-                        comboBox2.Enabled = false;
-                        tabPage2ConsoleCombo();
-                        textBox2.Text = fFile;
-                    }
-                    break;
-                case DialogResult.Cancel:
-                    if (tabControl1.SelectedTab == tabPage1)
-                    {
-                        radioButton1.Enabled = false;
-                        radioButton3.Enabled = false;
-                        radioButton4.Enabled = false;
-                        radioButton2.Enabled = true;
-                        radioButton2.Checked = true;
-                        comboBox3.Items.Clear();
-                        comboBox4.Items.Clear();
-                        comboBox3.Enabled = false;
-                        comboBox4.Enabled = true;
-                        tabPage1ConsoleCombo();
-                        textBox1.Text = fFile;
-                    }
-                    else if (tabControl1.SelectedTab == tabPage2)
-                    {
-                        radioButton5.Enabled = false;
-                        radioButton7.Enabled = false;
-                        radioButton8.Enabled = false;
-                        radioButton6.Enabled = true;
-                        radioButton6.Checked = true;
-                        comboBox1.Items.Clear();
-                        comboBox2.Items.Clear();
-                        comboBox1.Enabled = true;
-                        comboBox2.Enabled = false;
-                        tabPage2ConsoleCombo();
-                        textBox2.Text = fFile;
-                    }
-                    break;               
-            }
-            return dialogResult;
-
-        }
-
-        private DialogResult mInputBox(string title, string promptText, Icon icon, bool isDigit = false, int i = 0)
-        {
-            Form form = new Form();
-            Label label = new Label();
-            Button buttonYes = new Button();
-            Button buttonNo = new Button();
-            PictureBox icon1 = new PictureBox();
-            int z = i;
-
-            if (isDigit == true)
-
-                form.Text = title;
-            label.Text = promptText;
-
-            buttonYes.Text = T("yes");
-            buttonNo.Text = T("no");
-            buttonYes.DialogResult = DialogResult.OK;
-            buttonNo.DialogResult = DialogResult.Cancel;
-            icon1.Image = icon.ToBitmap();
-
-            label.AutoSize = false;
-            label.ForeColor = Color.DarkRed;
-            label.Font = new Font("Arial", 10, FontStyle.Bold);
-            label.TextAlign = ContentAlignment.MiddleLeft;
-            Size dialogSize = GetDialogSize(promptText, label.Font);
-            buttonYes.ForeColor = Color.Green;
-            buttonNo.ForeColor = Color.Green;
-            buttonYes.Font = new Font("Arial", 8, FontStyle.Bold);
-            buttonNo.Font = new Font("Arial", 8, FontStyle.Bold);
-
-            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
-            icon1.SetBounds(15, 15, 35, 35);
-            buttonYes.SetBounds(
-                (dialogSize.Width / 2) - 145,
-                dialogSize.Height - 40,
-                140,
-                23
-            );
-
-            buttonNo.SetBounds(
-                (dialogSize.Width / 2) + 5,
-                dialogSize.Height - 40,
-                140,
-                23
-            );
-
-            form.ClientSize = dialogSize;
-            form.Controls.AddRange(new Control[] { icon1, label, buttonYes, buttonNo });
-            form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterParent;
-            form.MinimizeBox = false;
-            form.MaximizeBox = false;
-            form.AcceptButton = buttonYes;
-            form.CancelButton = buttonNo;
-
-            DialogResult dialogResult = form.ShowDialog(this);
-            if (z == 1)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:                       
-                            at9DoProcess(); 
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-               
-            }else if (z == 2)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                            at3DoProcess();
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-               
-            }else if (z == 3)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                            System.IO.File.Delete(FileNameFinal2);
-                            mMoveFile();
-                        break;
-                    case DialogResult.Cancel:
-                        mMoveFile2();
-                        break;
-                }
-                
-            }else if (z == 4)
-            {
-                
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        
-                        string path1 = dir + "\\" + fFileOrig;
-                        string path2 = pPath + "\\" + fFileOrig;
-                        MessageBox.Show(dir + "\\" + fFileOrig + "\r\r" + pPath + "\\" + fFileOrig);
-                        if (!pPath.Equals(dir))
-                        {
-                            MessageBox.Show("0");
-                            if (File.Exists(path1))
-                            {
-                                MessageBox.Show("1");
-                                MessageBox.Show(dir + "\\" + fFileOrig + "\r\r" + pPath + "\\" + fFileOrig);
-                                File.Delete(path1);
-                                File.Copy(path2, path1);
-                                rRename();
-                            }
-                            else
-                            {
-                                MessageBox.Show("2");
-                                File.Copy(path2, path1);
-                                rRename();
-                            }
-
-                        }
-                        
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-                
-            }
-            else if (z == 5)
-            {
-                string path = dir + "\\" + FileNameFinal;
-                string path2 = pPath + "\\" + FileNameFinal;
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        File.Delete(path2);
-                        File.Move(path, path2);
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-
-            }
-            else if (z == 6)
-            { 
-                string path = dir + "\\" + FileNameFinal;
-                string path1 = dir + "\\" + FileNameFinal2;
-                string path2 = pPath + "\\" + FileNameFinal;
-                string path3 = pPath + "\\" + FileNameFinal2;
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        if (File.Exists(path2))
-                        {
-                            File.Delete(path2);
-                            File.Move(path, path2);
-                        }
-                        else
-                        {
-                            File.Move(path, path2);
-                        }
-                        if (File.Exists(path3))
-                        {
-                            File.Delete(path3);
-                            File.Move(path1, path3);
-                        }
-                        else
-                        {
-                            File.Move(path1, path3);
-                        }
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-
-            }
-            else if (z == 7)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        mPlayer();
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-
-            }
-            else if (z == 8)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        try
-                        {
-                            at9Player.Play(FileNameSelected);
-
-                            toolStripStatusLabel1.Text = T("playing_at9");
-                            statusStrip1.Refresh();
-
-                            button3.Enabled = true;
-                            //button1.Enabled = false;
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
-                        }
-                        break;
-
-                    case DialogResult.Cancel:
-                        break;
-                }
-            }
-            else if (z == 9)
-            {
-                switch (dialogResult)
-                {
-                    case DialogResult.OK:
-                        PlayAT3(FileNameSelected);
-                        break;
-                    case DialogResult.Cancel:
-
-                        break;
-                }
-
-            }
-            return dialogResult;
+            if (Confirm(T("play_at3_question")) == DialogResult.OK)
+                PlayAT3(at3State.SelectedFile);
         }
 
         private DialogResult mMessageBox(string title, string promptText, Icon icon, bool isDigit = false)
         {
-            Form form = new Form();
-            Label label = new Label();
-            Button buttonOK = new Button();
-            PictureBox icon1 = new PictureBox();
-
-            if (isDigit == true)
-
-            form.Text = title;
-            label.Text = promptText;
-
-            buttonOK.Text = T("ok");
-            buttonOK.DialogResult = DialogResult.OK;
-            icon1.Image = icon.ToBitmap();
-
-            label.AutoSize = false;
-            label.ForeColor = Color.DarkRed;
-            label.Font = new Font("Arial", 10, FontStyle.Bold);
-            label.TextAlign = ContentAlignment.MiddleLeft;
-            Size dialogSize = GetDialogSize(promptText, label.Font);
-            buttonOK.ForeColor = Color.Green;
-            buttonOK.Font = new Font("Arial", 8, FontStyle.Bold);
-            label.SetBounds(60, 15, dialogSize.Width - 75, dialogSize.Height - 75);
-            icon1.SetBounds(15, 15, 35, 35);
-            buttonOK.SetBounds(
-                (dialogSize.Width - 140) / 2,
-                dialogSize.Height - 40,
-                140,
-                23
-            );
-
-            form.ClientSize = dialogSize;
-            form.Controls.AddRange(new Control[] { icon1, label, buttonOK });
-            form.FormBorderStyle = FormBorderStyle.FixedDialog;
-            form.StartPosition = FormStartPosition.CenterParent;
-            form.MinimizeBox = false;
-            form.MaximizeBox = false;
-            form.AcceptButton = buttonOK;
-
-
-
-            DialogResult dialogResult = form.ShowDialog(this);
-            return dialogResult;
+            return DialogService.ShowOkDialog(this, title, promptText, icon, T("ok"));
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -1154,158 +387,184 @@ namespace at3_at9_Converter
             link.LinkData = "http://bmk.hamtek-solutions.com/";
             LoadLanguageList();
 
-            label1.AutoSize = false;
-            label1.TextAlign = ContentAlignment.MiddleCenter;
-
-            label2.AutoSize = false;
-            label2.TextAlign = ContentAlignment.MiddleCenter;
+            dropLabel.AutoSize = false;
+            dropLabel.TextAlign = ContentAlignment.MiddleCenter;
+            ApplyDisabledConsoleImages();
+            SetStopButtonEnabled(false);
+            SetConvertButtonEnabled(false);
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void ApplyDisabledConsoleImages()
         {
-            if (radioButton5.Checked == true || radioButton7.Checked == true)
-            {
-                if (comboBox1.Text == "PSP") 
-                { 
-                    at3tool = "PSP_at3tool.exe"; button4.Enabled = false; tabPage2PSPCombo(); comboBox2.Enabled = true; 
-                }
-                else if (comboBox1.Text == "PS3") 
-                { 
-                    at3tool = "PS3_at3tool.exe"; button4.Enabled = false; tabPage2PS3Combo(); comboBox2.Enabled = true; 
-                }
-            }
-            else
-            {
-                if (comboBox1.Text == "PSP") 
-                { 
-                    at3tool = "PSP_at3tool.exe"; button4.Enabled = true; tabPage2PSPCombo();
-                }
-                else if (comboBox1.Text == "PS3") 
-                { 
-                    at3tool = "PS3_at3tool.exe"; button4.Enabled = true; tabPage2PS3Combo();
-                }
-            }
+            UpdateConsoleImages();
         }
 
-        private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
+        private void UpdateConsoleImages()
         {
-            if (radioButton1.Checked == true || radioButton3.Checked == true)
-            {
-                if (comboBox4.Text == "PS4") 
-                { 
-                    at9tool = "PS4_at9tool.exe"; button2.Enabled = false; tabPage1PS4Combo(); comboBox3.Enabled = true; 
-                }
-                else if (comboBox4.Text == "PSVita")
-                { 
-                    at9tool = "PSVita_at9tool.exe"; button2.Enabled = false; tabPage1PSVitaCombo(); comboBox3.Enabled = true;
-                    MessageBox.Show(T("psvita_bitrate_info"), T("information"), MessageBoxButtons.OK, MessageBoxIcon.Asterisk); 
-                }
-            }
-            else
-            {
-                if (comboBox4.Text == "PS4") 
-                { 
-                    at9tool = "PS4_at9tool.exe"; button2.Enabled = true; tabPage1PS4Combo(); 
-                }
-                else if (comboBox4.Text == "PSVita") 
-                { 
-                    at9tool = "PSVita_at9tool.exe"; button2.Enabled = true; tabPage1PSVitaCombo();
-                }
-            }
+            string selectedConsole = consoleComboBox.Enabled ? consoleComboBox.Text : "";
+
+            psvitaPictureBox.Image = selectedConsole == "PSVita"
+                ? Resources.psvita
+                : CreateDisabledImage(Resources.psvita);
+
+            ps4PictureBox.Image = selectedConsole == "PS4"
+                ? Resources.ps4
+                : CreateDisabledImage(Resources.ps4);
+
+            ps3PictureBox.Image = selectedConsole == "PS3"
+                ? Resources.ps3
+                : CreateDisabledImage(Resources.ps3);
+
+            pspPictureBox.Image = selectedConsole == "PSP"
+                ? Resources.psp
+                : CreateDisabledImage(Resources.psp);
         }
 
-        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        private static Bitmap CreateDisabledImage(Image image)
         {
-            at3bitRate = comboBox2.Text;
-            button4.Enabled = true;
-
-            // Update final file name with the new bitrate
-            if (!string.IsNullOrEmpty(FileNameSelected))
+            Bitmap disabledImage = new Bitmap(image.Width, image.Height);
+            using (Graphics graphics = Graphics.FromImage(disabledImage))
             {
-                string dirPath = Path.GetDirectoryName(FileNameSelected);
-                string fileNameOnly = Path.GetFileNameWithoutExtension(FileNameSelected);
-                FileNameFinal = Path.Combine(dirPath, fileNameOnly + "_" + at3bitRate + "bit.at3");
-                FileNameFinal2 = Path.Combine(dirPath, fileNameOnly + ".wav");
+                ControlPaint.DrawImageDisabled(graphics, image, 0, 0, Color.Transparent);
+            }
+
+            return disabledImage;
+        }
+
+        private void consoleComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateConsoleImages();
+
+            if (ConversionModeInfo.IsAt9Mode(currentConversionMode))
+            {
+                SelectAt9Console();
+                return;
+            }
+
+            if (ConversionModeInfo.IsAt3Mode(currentConversionMode))
+            {
+                SelectAt3Console();
             }
         }
 
-        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        private void SelectAt9Console()
         {
-            at9bitRate = comboBox3.Text;
-            button2.Enabled = true;
-
-            // Update final file name with the new bitrate
-            if (!string.IsNullOrEmpty(FileNameSelected))
+            if (consoleComboBox.Text == "PS4")
             {
-                string dirPath = Path.GetDirectoryName(FileNameSelected);
-                string fileNameOnly = Path.GetFileNameWithoutExtension(FileNameSelected);
-                FileNameFinal = Path.Combine(dirPath, fileNameOnly + "_" + at9bitRate + "bit.at9");
-                FileNameFinal2 = Path.Combine(dirPath, fileNameOnly + ".wav");
+                at9Controller.SelectConsole(consoleComboBox.Text);
+                if (ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                    tabPage1PS4Combo();
+                UpdateConvertButtonAfterConsole();
             }
+            else if (consoleComboBox.Text == "PSVita")
+            {
+                at9Controller.SelectConsole(consoleComboBox.Text);
+                if (ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                    tabPage1PSVitaCombo();
+                UpdateConvertButtonAfterConsole();
+                if (ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                    mMessageBox(T("information"), T("psvita_bitrate_info"), SystemIcons.Information, true);
+            }
+        }
+
+        private void SelectAt3Console()
+        {
+            if (consoleComboBox.Text == "PSP")
+            {
+                at3Controller.SelectConsole(consoleComboBox.Text);
+                if (ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                    tabPage2PSPCombo();
+                UpdateConvertButtonAfterConsole();
+            }
+            else if (consoleComboBox.Text == "PS3")
+            {
+                at3Controller.SelectConsole(consoleComboBox.Text);
+                if (ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                    tabPage2PS3Combo();
+                UpdateConvertButtonAfterConsole();
+            }
+        }
+
+        private void UpdateConvertButtonAfterConsole()
+        {
+            bitrateComboBox.Enabled = ConversionModeInfo.NeedsBitRate(currentConversionMode);
+            if (!ConversionModeInfo.NeedsBitRate(currentConversionMode))
+                bitrateComboBox.Items.Clear();
+
+            SetConvertButtonEnabled(!ConversionModeInfo.NeedsBitRate(currentConversionMode)
+                || bitrateComboBox.SelectedIndex >= 0);
+        }
+
+        private void bitrateComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (ConversionModeInfo.IsAt9Mode(currentConversionMode))
+                at9Controller.SelectBitRate(bitrateComboBox.Text);
+            else if (ConversionModeInfo.IsAt3Mode(currentConversionMode))
+                at3Controller.SelectBitRate(bitrateComboBox.Text);
+
+            SetConvertButtonEnabled(true);
         }
 
         private void tabPage1ConsoleCombo()
         {
-            comboBox4.Items.Clear();
-            for (int i = 0; i < consoleListAt9.Length; i++) { comboBox4.Items.Add(consoleListAt9[i]); }
+            FillComboBox(consoleComboBox, ConversionOptions.At9Consoles, false);
         }
 
         private void tabPage1PSVitaCombo()
         {
-            comboBox3.Items.Clear();
-            for (int i = 0; i < psvitaList.Length; i++) { comboBox3.Items.Add(psvitaList[i]); }
-            if (comboBox3.Items.Count > 0) comboBox3.SelectedIndex = 0;
+            FillComboBox(bitrateComboBox, ConversionOptions.PsvitaBitRates, true);
         }
 
         private void tabPage1PS4Combo()
         {
-            comboBox3.Items.Clear();
-            for (int i = 0; i < ps4List.Length; i++) { comboBox3.Items.Add(ps4List[i]); }
-            if (comboBox3.Items.Count > 0) comboBox3.SelectedIndex = 0;
+            FillComboBox(bitrateComboBox, ConversionOptions.Ps4BitRates, true);
         }
 
         private void tabPage2ConsoleCombo()
         {
-            comboBox1.Items.Clear();
-            for (int i = 0; i < consoleListAt3.Length; i++) { comboBox1.Items.Add(consoleListAt3[i]); }
+            FillComboBox(consoleComboBox, ConversionOptions.At3Consoles, false);
         }
 
         private void tabPage2PSPCombo()
         {
-            comboBox2.Items.Clear();
-            for (int i = 0; i < pspList.Length; i++) { comboBox2.Items.Add(pspList[i]); } 
-            if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
+            FillComboBox(bitrateComboBox, ConversionOptions.PspBitRates, true);
         }
 
         private void tabPage2PS3Combo()
         {
-            comboBox2.Items.Clear();
-            for (int i = 0; i < ps3List.Length; i++) { comboBox2.Items.Add(ps3List[i]); }
-            if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
+            FillComboBox(bitrateComboBox, ConversionOptions.Ps3BitRates, true);
         }
 
-        private void pictureBox1_Click(object sender, EventArgs e)
+        private void FillComboBox(ComboBox comboBox, string[] values, bool selectFirst)
         {
-            if (comboBox4.Text == "PS4" && comboBox3.Enabled == true)
+            comboBox.Items.Clear();
+            comboBox.Items.AddRange(values);
+
+            if (selectFirst && comboBox.Items.Count > 0)
+                comboBox.SelectedIndex = 0;
+        }
+
+        private void bitrateInfoPictureBox_Click(object sender, EventArgs e)
+        {
+            if (!bitrateComboBox.Enabled)
+                return;
+
+            if (consoleComboBox.Text == "PS4")
             {
                 Ps4BitrateInfo Ps4Load = new Ps4BitrateInfo();
                 Ps4Load.Show();
             }
-            else if (comboBox4.Text == "PSVita" && comboBox3.Enabled == true)
+            else if (consoleComboBox.Text == "PSVita")
             {
                 PsvitaBitrateInfo PsvitaLoad = new PsvitaBitrateInfo();
                 PsvitaLoad.Show();
             }
-        }
-
-        private void pictureBox2_Click(object sender, EventArgs e)
-        {
-            if (comboBox1.Text == "PSP" && comboBox2.Enabled == true)
+            else if (consoleComboBox.Text == "PSP")
             {
                 PspBitrateInfo PspLoad = new PspBitrateInfo();
                 PspLoad.Show();
             }
-            else if (comboBox1.Text == "PS3" && comboBox2.Enabled == true)
+            else if (consoleComboBox.Text == "PS3")
             {
                 Ps3BitrateInfo Ps3Load = new Ps3BitrateInfo();
                 Ps3Load.Show();
@@ -1314,59 +573,20 @@ namespace at3_at9_Converter
 
         private void mPlayer()
         {
+            string fileToPlay = CurrentState.FinalFile;
 
-            string fileToPlay = FileNameFinal;
-
-            if (!File.Exists(fileToPlay))
+            try
             {
-                MessageBox.Show(T("file_not_found") + " " + fileToPlay);
-                return;
+                PlaybackFileKind playbackKind = audioPlayerService.PlayFile(fileToPlay, At3Player_Exited);
+                ApplyPlaybackUi(playbackKind);
             }
-
-            string ext = Path.GetExtension(fileToPlay).ToLower();
-
-            if (ext == ".at9")
+            catch (FileNotFoundException ex)
             {
-                try
-                {
-                    at9Player.Play(fileToPlay);
-
-                    toolStripStatusLabel1.Text = T("playing_at9");
-                    statusStrip1.Refresh();
-                    button3.Enabled = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
-                }
-
-                return;
+                MessageBox.Show(T("file_not_found") + " " + ex.FileName);
             }
-
-            if (ext == ".at3")
+            catch (Exception ex)
             {
-                try
-                {
-                    playerProcess = new Process();
-                    playerStartInfo = new ProcessStartInfo();
-                    playerStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    playerStartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"PLAYER\MiniPlayer.exe");
-                    playerStartInfo.Arguments = "\"" + FileNameFinal + "\"";
-                    playerStartInfo.UseShellExecute = false;
-                    playerStartInfo.CreateNoWindow = true;
-                    playerStartInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-                    playerProcess.StartInfo = playerStartInfo;
-                    playerProcess.Start();
-
-                    toolStripStatusLabel1.Text = T("playing");
-                    statusStrip1.Refresh();
-                    button1.Enabled = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(T("playback_error") + " " + ex.Message);
-                }
+                MessageBox.Show(T("playback_error") + " " + ex.Message);
             }
         }
 
@@ -1374,33 +594,30 @@ namespace at3_at9_Converter
         {
             try
             {
-                if (!File.Exists(filePath))
-                {
-                    MessageBox.Show(T("file_not_found") + " " + filePath);
-                    return;
-                }
-
-                playerProcess = new Process();
-                playerStartInfo = new ProcessStartInfo();
-                playerStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                playerStartInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"PLAYER\MiniPlayer.exe");
-                playerStartInfo.Arguments = "\"" + filePath + "\"";
-                playerStartInfo.UseShellExecute = false;
-                playerStartInfo.CreateNoWindow = true;
-                playerStartInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-                playerProcess.StartInfo = playerStartInfo;
-                playerProcess.Start();
-
-                toolStripStatusLabel1.Text = T("playing_at3");
-                statusStrip1.Refresh();
-
-                button1.Enabled = true;
-                button3.Enabled = false;
+                audioPlayerService.PlayAt3(filePath, At3Player_Exited);
+                ApplyPlaybackUi(PlaybackFileKind.At3);
+            }
+            catch (FileNotFoundException ex)
+            {
+                MessageBox.Show(T("file_not_found") + " " + ex.FileName);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(T("at3_playback_error") + " " + ex.Message);
+            }
+        }
+
+        private void ApplyPlaybackUi(PlaybackFileKind playbackKind)
+        {
+            if (playbackKind == PlaybackFileKind.At9)
+            {
+                SetStatus("playing_at9");
+                SetStopButtonEnabled(true);
+            }
+            else if (playbackKind == PlaybackFileKind.At3)
+            {
+                SetStatus("playing_at3");
+                SetStopButtonEnabled(true);
             }
         }
 
@@ -1410,163 +627,104 @@ namespace at3_at9_Converter
             Process.Start(e.Link.LinkData as string);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void stopPlaybackButton_Click(object sender, EventArgs e)
         {
 
-            playerProcess.Kill();
+            audioPlayerService.StopAt9();
+            audioPlayerService.StopAt3();
 
-            toolStripStatusLabel1.Text = T("stop");
-            statusStrip1.Refresh();
-            button1.Enabled = false;
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-
-            at9Player.Stop();
-
-            toolStripStatusLabel1.Text = T("stop");
-            statusStrip1.Refresh();
-            button3.Enabled = false;
+            SetStatus("stop");
+            SetStopButtonEnabled(false);
 
         }
 
-        private bool RunExternalProcess(string fileName, string arguments)
+        private void At3Player_Exited(object sender, EventArgs e)
         {
+            DisableStopButtonWhenPlaybackEnds(stopPlaybackButton);
+        }
+
+        private void At9Player_PlaybackStopped(object sender, EventArgs e)
+        {
+            DisableStopButtonWhenPlaybackEnds(stopPlaybackButton);
+        }
+
+        private void DisableStopButtonWhenPlaybackEnds(Button stopButton)
+        {
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
             try
             {
-                Process process = new Process();
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                startInfo.FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-                startInfo.Arguments = arguments;
-                startInfo.UseShellExecute = false;
-                startInfo.CreateNoWindow = true;
-                startInfo.RedirectStandardOutput = true;
-                startInfo.RedirectStandardError = true;
-                startInfo.WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                
-                process.StartInfo = startInfo;
-                process.Start();
-                
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                
-                process.WaitForExit();
-
-                if (process.ExitCode != 0 || !string.IsNullOrEmpty(error))
+                BeginInvoke(new Action(() =>
                 {
-                    string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
-                    string logEntry = string.Format("\r\n--- {0} ---\r\nFile: {1}\r\nCommand: {2} {3}\r\nOutput:\r\n{4}\r\nErrors:\r\n{5}\r\n--------------------------\r\n", 
-                        DateTime.Now.ToString(), fileName, fileName, arguments, output, error);
-                    
-                    File.AppendAllText(logPath, logEntry);
-                    
-                    if (process.ExitCode != 0)
-                    {
-                         toolStripStatusLabel1.Text = T("conversion_log_error");
-                         statusStrip1.Refresh();
-                    }
-                    return false;
-                }
-                return true;
+                    SetStopButtonEnabled(false);
+                    SetStatus("stop");
+                }));
             }
-            catch (Exception ex)
+            catch (InvalidOperationException)
             {
-                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "conversion_errors.log");
-                File.AppendAllText(logPath, "\r\nCRITICAL EXCEPTION: " + DateTime.Now.ToString() + " - " + ex.Message + "\r\n");
-                MessageBox.Show(T("critical_tool_error"), T("error"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
             }
-        }
-
-        private Size GetDialogSize(string text, Font font, int minWidth = 335, int maxWidth = 650)
-        {
-            int textMaxWidth = maxWidth - 80;
-
-            Size textSize = TextRenderer.MeasureText(
-                text,
-                font,
-                new Size(textMaxWidth, 0),
-                TextFormatFlags.WordBreak
-            );
-
-            int width = Math.Max(minWidth, textSize.Width + 90);
-            int height = Math.Max(100, textSize.Height + 95);
-
-            return new Size(width, height);
         }
 
         private void LoadLanguageList()
         {
-            comboBoxLanguage.Items.Clear();
+            languageComboBox.Items.Clear();
 
-            string langPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lang");
+            languageService.EnsureEnglishTemplate(GetDefaultEnglishLanguage());
+            IReadOnlyList<LanguageItem> languages = languageService.GetAvailableLanguages();
 
-            if (!Directory.Exists(langPath))
-                Directory.CreateDirectory(langPath);
-
-            string[] files = Directory.GetFiles(langPath, "*.json");
-
-            if (files.Length == 0)
+            if (languages.Count == 0)
             {
                 LoadDefaultEnglishLanguage();
                 ApplyLanguage();
 
-                comboBoxLanguage.Items.Clear();
-                comboBoxLanguage.Items.Add("English");
-                comboBoxLanguage.SelectedIndex = 0;
-                comboBoxLanguage.Enabled = false;
+                languageComboBox.Items.Clear();
+                languageComboBox.Items.Add("English");
+                languageComboBox.SelectedIndex = 0;
+                languageComboBox.Enabled = false;
 
                 return;
             }
 
-            foreach (string file in files)
+            foreach (LanguageItem item in languages)
             {
-                string code = Path.GetFileNameWithoutExtension(file);
-                string json = File.ReadAllText(file, Encoding.UTF8);
-
-                Dictionary<string, string> tempLang =
-                    JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-
-                string languageName = tempLang.ContainsKey("language")
-                    ? tempLang["language"]
-                    : code;
-
-                comboBoxLanguage.Items.Add(new LanguageItem
-                {
-                    Code = code,
-                    Name = languageName
-                });
+                languageComboBox.Items.Add(item);
             }
 
-            foreach (LanguageItem item in comboBoxLanguage.Items)
+            foreach (LanguageItem item in languageComboBox.Items)
             {
                 if (item.Code.ToLower() == "en")
                 {
-                    comboBoxLanguage.SelectedItem = item;
+                    languageComboBox.SelectedItem = item;
                     break;
                 }
             }
         }
 
-        private void comboBoxLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        private void SetStopButtonEnabled(bool enabled)
         {
-            string langCode = comboBoxLanguage.Text;
-            LoadLanguage(langCode);
-            ApplyLanguage();
+            stopPlaybackButton.Enabled = enabled;
+            stopPlaybackButton.BackColor = enabled ? activeButtonBackColor : disabledButtonBackColor;
+            stopPlaybackButton.ForeColor = enabled ? Color.White : disabledButtonForeColor;
+        }
+
+        private void SetConvertButtonEnabled(bool enabled)
+        {
+            convertButton.Enabled = enabled;
+            convertButton.BackColor = enabled ? activeButtonBackColor : disabledButtonBackColor;
+            convertButton.ForeColor = enabled ? Color.White : disabledButtonForeColor;
         }
 
         private void LoadLanguage(string langCode)
         {
-            string filePath = Path.Combine(languageDir, langCode + ".json");
+            LanguageLoadResult result = languageService.LoadLanguage(langCode, GetDefaultEnglishLanguage());
+            lang = result.Language;
 
-            if (!File.Exists(filePath))
-                filePath = Path.Combine(languageDir, "en.json");
-
-            string json = File.ReadAllText(filePath, Encoding.UTF8);
-
-            lang = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+            if (result.IsOutdated && !warnedOutdatedLanguages.Contains(langCode))
+            {
+                warnedOutdatedLanguages.Add(langCode);
+                mMessageBox(T("information"), T("language_outdated_warning"), SystemIcons.Warning, true);
+            }
         }
 
         private string T(string key)
@@ -1574,9 +732,9 @@ namespace at3_at9_Converter
             return lang.ContainsKey(key) ? lang[key] : key;
         }
 
-        private void comboBoxLanguage_SelectedIndexChanged_1(object sender, EventArgs e)
+        private void languageComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (comboBoxLanguage.SelectedItem is LanguageItem selectedLanguage)
+            if (languageComboBox.SelectedItem is LanguageItem selectedLanguage)
             {
                 LoadLanguage(selectedLanguage.Code);
                 ApplyLanguage();
@@ -1585,32 +743,43 @@ namespace at3_at9_Converter
 
         private void ApplyLanguage()
         {
-            tabPage1.Text = T("tab_at9");
-            tabPage2.Text = T("tab_at3");
-            label1.Text = T("drag_drop");
-            label2.Text = T("drag_drop");
-            button2.Text = T("convert");
-            button4.Text = T("convert");
-            button1.Text = T("stop_playing");
-            button3.Text = T("stop_playing");
-            groupBox1.Text = T("conversion_type");
-            groupBox2.Text = T("conversion_type");
-            label3.Text = T("bitrate");
-            label4.Text = T("console_type");
-            label5.Text = T("bitrate");
-            label6.Text = T("console_type");
+            dropLabel.Text = T("drag_drop");
+            convertButton.Text = T("convert");
+            stopPlaybackButton.Text = T("stop_playing");
+            conversionGroupBox.Text = T("conversion_type");
+            bitrateLabel.Text = T("bitrate");
+            consoleLabel.Text = T("console_type");
+            ApplyToolTips();
+            SetConversionMode(currentConversionMode);
+            SetStatus(currentStatusKey);
+        }
+
+        private void ApplyToolTips()
+        {
+            mainToolTip.SetToolTip(conversionGroupBox, T("tooltip_conversion_type"));
+            mainToolTip.SetToolTip(consoleLabel, T("tooltip_console_type"));
+            mainToolTip.SetToolTip(bitrateInfoPictureBox, T("tooltip_bitrate_info"));
+            mainToolTip.SetToolTip(bitrateLabel, T("tooltip_bitrate"));
+            mainToolTip.SetToolTip(dropLabel, T("tooltip_drag_drop"));
+            mainToolTip.SetToolTip(convertButton, T("tooltip_convert"));
+            mainToolTip.SetToolTip(filePathTextBox, T("tooltip_file_path"));
         }
 
         private void LoadDefaultEnglishLanguage()
         {
-            lang = new Dictionary<string, string>
+            lang = GetDefaultEnglishLanguage();
+        }
+
+        private Dictionary<string, string> GetDefaultEnglishLanguage()
+        {
+            return new Dictionary<string, string>
             {
-                { "tab_at9", "AT9Tool PSVita/TV & P4" },
-                { "tab_at3", "AT3Tool PSP & PS3" },
+                { "version", "1" },
+                { "language", "English" }, 
                 { "drag_drop", "Drag and drop your file here" },
                 { "convert", "Convert" },
                 { "stop_playing", "Stop Playing" },
-                { "conversion_type", "Select Type Convertion" },
+                { "conversion_type", "Conversion type" },
                 { "bitrate", "BitRate [kbps]:" },
                 { "console_type", "Console Type:" },               
                 { "question", "Question" },
@@ -1619,13 +788,16 @@ namespace at3_at9_Converter
                 { "no", "No" },
                 { "ok", "OK" },
                 { "format_question", "What format do you want to convert it to?" },
+                { "target_format_question", "What codec do you want to convert it to?" },
+                { "conversion_mode_prefix", "Conversion:" },
+                { "conversion_mode_empty", "Conversion:" },
                 { "file_exists_continue", "File(s) already exist. Do you want to continue?" },
+                { "wav_exists_continue", "The WAV file already exist. Do you want to overwrite it?" },
                 { "delete_wav_question", "Do you want to delete the WAV file?" },
                 { "play_file_question", "Do you want to play the file?" },
                 { "play_at9_question", "Do you want to play this AT9 file?" },
                 { "play_at3_question", "Do you want to play this AT3 file?" },
-                { "invalid_at9_file", "Please select an MP3, WAV or AT9 file." },
-                { "invalid_at3_file", "Please select an MP3, WAV or AT3 file." },
+                { "invalid_audio_file", "Please select an MP3, WAV, AT9 or AT3 file." },
                 { "resampling_wav", "Resampling WAV to 48000Hz..." },
                 { "normalizing_psp", "Normalizing for PSP (44100Hz Stereo)..." },
                 { "wav_progress", "WAV in progress..." },
@@ -1633,33 +805,26 @@ namespace at3_at9_Converter
                 { "at3_progress", "AT3 in progress..." },
                 { "finish", "Finish!" },
                 { "ready", "Ready!" },
-                { "playing", "Playing..." },
                 { "playing_at9", "Playing AT9..." },
                 { "playing_at3", "Playing AT3..." },
                 { "stop", "Stop!" },
                 { "file_not_found", "File not found:" },
-                { "audio_file_not_found", "Audio file not found." },
                 { "playback_error", "Playback error:" },
                 { "at9_playback_error", "AT9 playback error:" },
                 { "at3_playback_error", "AT3 playback error:" },
                 { "wav_preprocess_error", "Error during WAV preprocessing:" },
                 { "psp_conversion_error", "PSP conversion error:" },
-                { "critical_tool_error", "Critical error while executing the tool. Check conversion_errors.log" },
                 { "conversion_log_error", "Error! Check conversion_errors.log" },
-                { "psvita_bitrate_info", "If you make theme for PSVita/TV use the BitRate 144 for more compatibility" },
-                { "language", "English" }
+                { "psvita_bitrate_info", "If you make theme for PSVita/TV use the BitRate 144 for more compatibility" },                        
+                { "language_outdated_warning", "This translation file is older than the application language template. Missing translations will be displayed in English." },
+                { "tooltip_conversion_type", "Selected conversion type" },
+                { "tooltip_console_type", "Select your console type" },
+                { "tooltip_bitrate_info", "Bitrate information" },
+                { "tooltip_bitrate", "Select your bitrate" },
+                { "tooltip_drag_drop", "Drag and drop your file here" },
+                { "tooltip_convert", "Start conversion" },
+                { "tooltip_file_path", "Selected file path" }
             };
-        }
-
-        private class LanguageItem
-        {
-            public string Code { get; set; }
-            public string Name { get; set; }
-
-            public override string ToString()
-            {
-                return Name;
-            }
         }
     }
 }
