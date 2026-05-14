@@ -17,6 +17,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
+    <Deterministic>false</Deterministic>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -26,6 +27,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
+    <Deterministic>false</Deterministic>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -43,6 +45,9 @@
     <Reference Include="NAudio.WindowsMediaFormat">
       <HintPath>NAUDIO\NAudio.WindowsMediaFormat.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -53,8 +58,17 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="VGAudio, Version=2.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\VGAudio.2.2.1\lib\net45\VGAudio.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AudioPlayerService.cs" />
+    <Compile Include="At3Controller.cs" />
+    <Compile Include="At9Controller.cs" />
+    <Compile Include="At9Player.cs" />
+    <Compile Include="ConversionModels.cs" />
+    <Compile Include="ConversionService.cs" />
     <Compile Include="CustomizedToolTip.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -98,6 +112,8 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="DialogService.cs" />
+    <Compile Include="LanguageService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FormChooser.resx">
       <DependentUpon>FormChooser.cs</DependentUpon>
@@ -127,6 +143,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -165,35 +182,20 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\background.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\background3.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\background2.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\background21.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\background31.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="icon.ico" />
-    <None Include="Resources\at9_Converter1.png" />
     <None Include="Resources\ps4_bitrate.png" />
     <None Include="Resources\at9_bitrate.png" />
     <None Include="Resources\psp_bitrate.png" />
     <None Include="Resources\ps3_bitrate.png" />
-    <None Include="Resources\at3_Converter1.png" />
     <None Include="Resources\at3_Converter.png" />
     <None Include="Resources\at9_Converter.png" />
     <None Include="Resources\psvita_bitrate.png" />
     <None Include="Resources\psp_ps3_bitrate.png" />
-    <None Include="Resources\Icon-warning1.png" />
-    <None Include="Resources\Icon-warning.png" />
-    <None Include="Resources\icon_caution.png" />
+    <None Include="Resources\info_bitrate.png" />
+    <None Include="Resources\psvita.png" />
+    <None Include="Resources\ps4.png" />
+    <None Include="Resources\ps3.png" />
+    <None Include="Resources\psp.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

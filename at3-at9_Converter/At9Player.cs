@@ -14,6 +14,7 @@ namespace at3_at9_Converter
         private MemoryStream memoryStream;
 
         public bool IsPlaying { get; private set; }
+        public event EventHandler PlaybackStopped;
 
         public void Play(string filePath)
         {
@@ -52,6 +53,7 @@ namespace at3_at9_Converter
             waveStream = new RawSourceWaveStream(memoryStream, waveFormat);
 
             outputDevice = new WaveOutEvent();
+            outputDevice.PlaybackStopped += OutputDevice_PlaybackStopped;
             outputDevice.Init(waveStream);
             outputDevice.Play();
 
@@ -64,6 +66,7 @@ namespace at3_at9_Converter
 
             if (outputDevice != null)
             {
+                outputDevice.PlaybackStopped -= OutputDevice_PlaybackStopped;
                 outputDevice.Stop();
                 outputDevice.Dispose();
                 outputDevice = null;
@@ -85,6 +88,12 @@ namespace at3_at9_Converter
         public void Dispose()
         {
             Stop();
+        }
+
+        private void OutputDevice_PlaybackStopped(object sender, StoppedEventArgs e)
+        {
+            IsPlaying = false;
+            PlaybackStopped?.Invoke(this, EventArgs.Empty);
         }
     }
 }
