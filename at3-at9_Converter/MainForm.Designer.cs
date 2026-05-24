@@ -21,6 +21,7 @@ namespace at3_at9_Converter
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.conversionPanel = new System.Windows.Forms.Panel();
             this.languageComboBox = new System.Windows.Forms.ComboBox();
+            this.toolOptionsButton = new System.Windows.Forms.Button();
             this.stopPlaybackButton = new System.Windows.Forms.Button();
             this.conversionGroupBox = new System.Windows.Forms.GroupBox();
             this.conversionModeLabel = new System.Windows.Forms.Label();
@@ -39,6 +40,7 @@ namespace at3_at9_Converter
             this.mainToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.studioLinkStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.conversionPanel.SuspendLayout();
             this.conversionGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.bitrateInfoPictureBox)).BeginInit();
@@ -53,6 +55,7 @@ namespace at3_at9_Converter
             // 
             this.conversionPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(114)))), ((int)(((byte)(197)))));
             this.conversionPanel.Controls.Add(this.languageComboBox);
+            this.conversionPanel.Controls.Add(this.toolOptionsButton);
             this.conversionPanel.Controls.Add(this.stopPlaybackButton);
             this.conversionPanel.Controls.Add(this.conversionGroupBox);
             this.conversionPanel.Controls.Add(this.dropLabel);
@@ -62,9 +65,9 @@ namespace at3_at9_Converter
             this.conversionPanel.Controls.Add(this.ps4PictureBox);
             this.conversionPanel.Controls.Add(this.ps3PictureBox);
             this.conversionPanel.Controls.Add(this.pspPictureBox);
-            this.conversionPanel.Location = new System.Drawing.Point(1, 1);
+            this.conversionPanel.Location = new System.Drawing.Point(0, -2);
             this.conversionPanel.Name = "conversionPanel";
-            this.conversionPanel.Size = new System.Drawing.Size(410, 331);
+            this.conversionPanel.Size = new System.Drawing.Size(410, 372);
             this.conversionPanel.TabIndex = 0;
             // 
             // languageComboBox
@@ -72,9 +75,24 @@ namespace at3_at9_Converter
             this.languageComboBox.FormattingEnabled = true;
             this.languageComboBox.Location = new System.Drawing.Point(215, 17);
             this.languageComboBox.Name = "languageComboBox";
-            this.languageComboBox.Size = new System.Drawing.Size(184, 21);
+            this.languageComboBox.Size = new System.Drawing.Size(104, 21);
             this.languageComboBox.TabIndex = 10;
             this.languageComboBox.SelectedIndexChanged += new System.EventHandler(this.languageComboBox_SelectedIndexChanged);
+            // 
+            // toolOptionsButton
+            // 
+            this.toolOptionsButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(229)))), ((int)(((byte)(231)))), ((int)(((byte)(235)))));
+            this.toolOptionsButton.Enabled = false;
+            this.toolOptionsButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.toolOptionsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.toolOptionsButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(55)))), ((int)(((byte)(65)))), ((int)(((byte)(81)))));
+            this.toolOptionsButton.Location = new System.Drawing.Point(327, 15);
+            this.toolOptionsButton.Name = "toolOptionsButton";
+            this.toolOptionsButton.Size = new System.Drawing.Size(72, 25);
+            this.toolOptionsButton.TabIndex = 16;
+            this.toolOptionsButton.Text = "Options...";
+            this.toolOptionsButton.UseVisualStyleBackColor = false;
+            this.toolOptionsButton.Click += new System.EventHandler(this.toolOptionsButton_Click);
             // 
             // stopPlaybackButton
             // 
@@ -178,7 +196,7 @@ namespace at3_at9_Converter
             this.dropLabel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(236)))), ((int)(((byte)(244)))), ((int)(((byte)(255)))));
             this.dropLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 13F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.dropLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235)))));
-            this.dropLabel.Location = new System.Drawing.Point(13, 287);
+            this.dropLabel.Location = new System.Drawing.Point(13, 322);
             this.dropLabel.Name = "dropLabel";
             this.dropLabel.Size = new System.Drawing.Size(384, 31);
             this.dropLabel.TabIndex = 7;
@@ -204,7 +222,7 @@ namespace at3_at9_Converter
             // 
             this.filePathTextBox.BackColor = System.Drawing.Color.White;
             this.filePathTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.filePathTextBox.Location = new System.Drawing.Point(13, 258);
+            this.filePathTextBox.Location = new System.Drawing.Point(13, 293);
             this.filePathTextBox.Name = "filePathTextBox";
             this.filePathTextBox.Size = new System.Drawing.Size(384, 13);
             this.filePathTextBox.TabIndex = 4;
@@ -213,7 +231,7 @@ namespace at3_at9_Converter
             // 
             this.psvitaPictureBox.BackColor = System.Drawing.Color.Transparent;
             this.psvitaPictureBox.Image = global::at3_at9_Converter.Properties.Resources.psvita;
-            this.psvitaPictureBox.Location = new System.Drawing.Point(21, 181);
+            this.psvitaPictureBox.Location = new System.Drawing.Point(17, 196);
             this.psvitaPictureBox.Name = "psvitaPictureBox";
             this.psvitaPictureBox.Size = new System.Drawing.Size(76, 54);
             this.psvitaPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -224,7 +242,7 @@ namespace at3_at9_Converter
             // 
             this.ps4PictureBox.BackColor = System.Drawing.Color.Transparent;
             this.ps4PictureBox.Image = global::at3_at9_Converter.Properties.Resources.ps4;
-            this.ps4PictureBox.Location = new System.Drawing.Point(117, 181);
+            this.ps4PictureBox.Location = new System.Drawing.Point(113, 196);
             this.ps4PictureBox.Name = "ps4PictureBox";
             this.ps4PictureBox.Size = new System.Drawing.Size(76, 54);
             this.ps4PictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -235,7 +253,7 @@ namespace at3_at9_Converter
             // 
             this.ps3PictureBox.BackColor = System.Drawing.Color.Transparent;
             this.ps3PictureBox.Image = global::at3_at9_Converter.Properties.Resources.ps3;
-            this.ps3PictureBox.Location = new System.Drawing.Point(213, 181);
+            this.ps3PictureBox.Location = new System.Drawing.Point(217, 196);
             this.ps3PictureBox.Name = "ps3PictureBox";
             this.ps3PictureBox.Size = new System.Drawing.Size(76, 54);
             this.ps3PictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -246,7 +264,7 @@ namespace at3_at9_Converter
             // 
             this.pspPictureBox.BackColor = System.Drawing.Color.Transparent;
             this.pspPictureBox.Image = global::at3_at9_Converter.Properties.Resources.psp;
-            this.pspPictureBox.Location = new System.Drawing.Point(309, 181);
+            this.pspPictureBox.Location = new System.Drawing.Point(317, 196);
             this.pspPictureBox.Name = "pspPictureBox";
             this.pspPictureBox.Size = new System.Drawing.Size(76, 54);
             this.pspPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -262,9 +280,10 @@ namespace at3_at9_Converter
             // 
             this.mainStatusStrip.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.mainStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.statusLabel});
+            this.statusLabel,
+            this.studioLinkStatusLabel});
             this.mainStatusStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
-            this.mainStatusStrip.Location = new System.Drawing.Point(0, 335);
+            this.mainStatusStrip.Location = new System.Drawing.Point(0, 370);
             this.mainStatusStrip.Name = "mainStatusStrip";
             this.mainStatusStrip.Size = new System.Drawing.Size(410, 22);
             this.mainStatusStrip.SizingGrip = false;
@@ -279,11 +298,22 @@ namespace at3_at9_Converter
             this.statusLabel.Size = new System.Drawing.Size(45, 17);
             this.statusLabel.Text = "Ready!";
             // 
+            // studioLinkStatusLabel
+            // 
+            this.studioLinkStatusLabel.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.studioLinkStatusLabel.IsLink = true;
+            this.studioLinkStatusLabel.LinkBehavior = System.Windows.Forms.LinkBehavior.NeverUnderline;
+            this.studioLinkStatusLabel.LinkColor = System.Drawing.Color.Gray;
+            this.studioLinkStatusLabel.Name = "studioLinkStatusLabel";
+            this.studioLinkStatusLabel.Size = new System.Drawing.Size(72, 17);
+            this.studioLinkStatusLabel.Text = "BMK-Studio";
+            this.studioLinkStatusLabel.Click += new System.EventHandler(this.studioLinkStatusLabel_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(410, 357);
+            this.ClientSize = new System.Drawing.Size(410, 392);
             this.Controls.Add(this.mainStatusStrip);
             this.Controls.Add(this.conversionPanel);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
@@ -326,10 +356,12 @@ namespace at3_at9_Converter
         private System.Windows.Forms.PictureBox ps3PictureBox;
         private System.Windows.Forms.PictureBox pspPictureBox;
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
+        private System.Windows.Forms.ToolStripStatusLabel studioLinkStatusLabel;
         private System.Windows.Forms.StatusStrip mainStatusStrip;
         private System.Windows.Forms.Button stopPlaybackButton;
         private System.Windows.Forms.ComboBox consoleComboBox;
         private System.Windows.Forms.Label consoleLabel;
         private System.Windows.Forms.ComboBox languageComboBox;
+        private System.Windows.Forms.Button toolOptionsButton;
     }
 }

@@ -52,10 +52,16 @@ namespace at3_at9_Converter
 
         public void SelectConsole(string consoleName)
         {
+            string previousToolName = state.ToolName;
+
             if (consoleName == "PS4")
                 state.ToolName = "PS4_at9tool.exe";
             else if (consoleName == "PSVita")
                 state.ToolName = "PSVita_at9tool.exe";
+
+            if (!string.IsNullOrEmpty(previousToolName)
+                && !string.Equals(previousToolName, state.ToolName, StringComparison.OrdinalIgnoreCase))
+                state.ResetToolSettings();
         }
 
         public void SelectBitRate(string bitRate)
@@ -96,7 +102,8 @@ namespace at3_at9_Converter
                 FinalFile = state.FinalFile,
                 IntermediateWavFile = state.IntermediateWavFile,
                 ToolName = state.ToolName,
-                BitRate = state.BitRate
+                BitRate = state.BitRate,
+                ToolSettings = state.ToolSettings.Clone()
             }, updateStatus);
         }
 

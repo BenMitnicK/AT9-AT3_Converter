@@ -11,14 +11,16 @@ namespace at3_at9_Converter
     {
         private readonly string baseDirectory;
         private readonly string logPath;
+        private readonly string commandLogPath;
 
         public ConversionService(string baseDirectory)
         {
             this.baseDirectory = baseDirectory;
             logPath = Path.Combine(baseDirectory, "conversion_errors.log");
+            commandLogPath = Path.Combine(baseDirectory, "conversion_commands.log");
         }
 
-        public async Task<bool> RunExternalProcessAsync(string fileName, string arguments)
+        public async Task<bool> RunExternalProcessAsync(string fileName, string arguments, ConversionCommandLogContext logContext = null)
         {
             try
             {
@@ -46,6 +48,7 @@ namespace at3_at9_Converter
 
                     string output = await outputTask;
                     string error = await errorTask;
+                    LogCommandResult(fileName, arguments, output, error, process.ExitCode, logContext);
 
                     if (process.ExitCode != 0)
                     {
@@ -59,6 +62,7 @@ namespace at3_at9_Converter
             catch (Exception ex)
             {
                 File.AppendAllText(logPath, "\r\nCRITICAL EXCEPTION: " + DateTime.Now + " - " + ex.Message + "\r\n");
+                LogCommandException(fileName, arguments, ex, logContext);
                 return false;
             }
         }
@@ -85,6 +89,74 @@ namespace at3_at9_Converter
             logEntry.AppendLine("--------------------------");
 
             File.AppendAllText(logPath, logEntry.ToString());
+        }
+
+        private void LogCommandResult(string fileName, string arguments, string output, string error, int exitCode, ConversionCommandLogContext context)
+        {
+            StringBuilder logEntry = new StringBuilder();
+            ToolOptionLevel level = context == null ? ToolOptionLevel.Basic : context.Level;
+
+            logEntry.AppendLine();
+            logEntry.AppendLine("--- " + DateTime.Now + " ---");
+            logEntry.AppendLine("Level: " + level);
+            AppendContext(logEntry, context);
+            logEntry.AppendLine("Tool: " + fileName);
+            logEntry.AppendLine("Arguments: " + arguments);
+            logEntry.AppendLine("Command: " + fileName + " " + arguments);
+            logEntry.AppendLine("Result: " + (exitCode == 0 ? "Success" : "Failed"));
+            logEntry.AppendLine("ExitCode: " + exitCode);
+
+            if (level == ToolOptionLevel.Advanced || level == ToolOptionLevel.Expert || exitCode != 0)
+            {
+                logEntry.AppendLine("Output:");
+                logEntry.AppendLine(output);
+                logEntry.AppendLine("Errors:");
+                logEntry.AppendLine(error);
+            }
+
+            if (level == ToolOptionLevel.Expert)
+            {
+                logEntry.AppendLine("Expert details:");
+                logEntry.AppendLine("CustomEncodeArgs: " + Safe(context == null ? "" : context.CustomEncodeArgs));
+                logEntry.AppendLine("CustomDecodeArgs: " + Safe(context == null ? "" : context.CustomDecodeArgs));
+            }
+
+            logEntry.AppendLine("--------------------------");
+            File.AppendAllText(commandLogPath, logEntry.ToString());
+        }
+
+        private void LogCommandException(string fileName, string arguments, Exception ex, ConversionCommandLogContext context)
+        {
+            StringBuilder logEntry = new StringBuilder();
+            logEntry.AppendLine();
+            logEntry.AppendLine("--- " + DateTime.Now + " ---");
+            logEntry.AppendLine("Level: " + (context == null ? ToolOptionLevel.Basic : context.Level));
+            AppendContext(logEntry, context);
+            logEntry.AppendLine("Tool: " + fileName);
+            logEntry.AppendLine("Arguments: " + arguments);
+            logEntry.AppendLine("Command: " + fileName + " " + arguments);
+            logEntry.AppendLine("Result: Exception");
+            logEntry.AppendLine("Exception: " + ex.Message);
+            logEntry.AppendLine("--------------------------");
+            File.AppendAllText(commandLogPath, logEntry.ToString());
+        }
+
+        private static void AppendContext(StringBuilder logEntry, ConversionCommandLogContext context)
+        {
+            if (context == null)
+                return;
+
+            logEntry.AppendLine("Console: " + Safe(context.ConsoleName));
+            logEntry.AppendLine("Conversion: " + Safe(context.ConversionMode));
+            logEntry.AppendLine("BitRate: " + Safe(context.BitRate));
+            logEntry.AppendLine("Input: " + Safe(context.InputFile));
+            logEntry.AppendLine("Output: " + Safe(context.OutputFile));
+            logEntry.AppendLine("Options: " + Safe(context.Options));
+        }
+
+        private static string Safe(string value)
+        {
+            return string.IsNullOrEmpty(value) ? "(none)" : value;
         }
     }
 
@@ -148,6 +220,99 @@ namespace at3_at9_Converter
         }
     }
 
+    internal static class ConversionToolArgumentBuilder
+    {
+        public static string BuildEncodeOptions(ConversionToolSettings settings, bool isAt9, bool isPs4)
+        {
+            if (settings == null || settings.Level == ToolOptionLevel.Basic)
+                return " -wholeloop";
+
+            string arguments = "";
+
+            switch (settings.LoopMode)
+            {
+                case ToolLoopMode.NoLoop:
+                    break;
+                case ToolLoopMode.CustomLoop:
+                    arguments += " -loop " + settings.LoopStart + " " + settings.LoopEnd;
+                    break;
+                case ToolLoopMode.DefaultWholeLoop:
+                    arguments += isPs4 ? " -defaultWL" : " -wholeloop";
+                    break;
+                default:
+                    arguments += " -wholeloop";
+                    break;
+            }
+
+            if (settings.Level != ToolOptionLevel.Expert)
+                return arguments;
+
+            if (isAt9 && settings.UseSamplingRate)
+                arguments += " -fs " + settings.SamplingRate;
+
+            if (isAt9 && settings.UseLoopList && !string.IsNullOrWhiteSpace(settings.LoopListPath))
+                arguments += " -looplist \"" + settings.LoopListPath + "\"";
+
+            if (isAt9 && settings.SuperframeMode == 1)
+                arguments += " -supframeon";
+            else if (isAt9 && settings.SuperframeMode == 2)
+                arguments += " -supframeoff";
+
+            if (isAt9 && settings.DualMode)
+                arguments += " -dual";
+
+            if (isAt9 && settings.UseQuantizedBands)
+                arguments += " -nbands " + settings.QuantizedBands;
+
+            if (isAt9 && settings.UseIntensityBand)
+                arguments += " -isband " + settings.IntensityBand;
+
+            if (isAt9 && settings.UseGradientMode)
+                arguments += " -gradmode " + settings.GradientMode;
+
+            if (isPs4 && settings.WideBand)
+                arguments += " -wband";
+
+            if (isPs4 && settings.BandExtension)
+                arguments += " -bex";
+
+            if (isPs4 && settings.LfeSuperLowCut)
+                arguments += " -slc";
+
+            if (!string.IsNullOrWhiteSpace(settings.CustomEncodeArgs))
+                arguments += " " + settings.CustomEncodeArgs.Trim();
+
+            return arguments;
+        }
+
+        public static string BuildDecodeOptions(ConversionToolSettings settings, bool isPs4)
+        {
+            if (settings == null || settings.Level == ToolOptionLevel.Basic)
+                return " -repeat 1";
+
+            int repeat = settings.DecodeRepeat < 1 ? 1 : settings.DecodeRepeat;
+            string arguments = " -repeat " + repeat;
+
+            if (settings.Level == ToolOptionLevel.Expert && isPs4 && settings.WaveExtensibleHeader)
+                arguments += " -wext";
+
+            if ((settings.Level == ToolOptionLevel.Advanced || settings.Level == ToolOptionLevel.Expert) && isPs4)
+            {
+                if (settings.PcmOutputFormat == ToolPcmOutputFormat.Int24)
+                    arguments += " -int24";
+                else if (settings.PcmOutputFormat == ToolPcmOutputFormat.Float)
+                    arguments += " -float";
+                else
+                    arguments += " -int16";
+            }
+
+            if (settings.Level == ToolOptionLevel.Expert && !string.IsNullOrWhiteSpace(settings.CustomDecodeArgs))
+                arguments += " " + settings.CustomDecodeArgs.Trim();
+
+            return arguments;
+        }
+    }
+
     public sealed class At9ConversionWorkflow
     {
         private readonly ConversionService conversionService;
@@ -196,7 +361,9 @@ namespace at3_at9_Converter
                 }
 
                 updateStatus("at9_progress");
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + " -wholeloop \"" + wavToProcess + "\" \"" + request.FinalFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildEncodeOptions(request.ToolSettings, true, IsPs4Tool(request.ToolName));
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + options + " \"" + wavToProcess + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "WAV -> AT9", wavToProcess, request.FinalFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(false, true)
                     : ConversionWorkflowResult.Failed();
@@ -217,7 +384,9 @@ namespace at3_at9_Converter
             try
             {
                 updateStatus("wav_progress");
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildDecodeOptions(request.ToolSettings, IsPs4Tool(request.ToolName));
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d" + options + " \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT9 -> WAV", request.SelectedFile, request.IntermediateWavFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(false, false)
                     : ConversionWorkflowResult.Failed();
@@ -242,7 +411,9 @@ namespace at3_at9_Converter
                 }
 
                 updateStatus("at9_progress");
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + " -wholeloop \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildEncodeOptions(request.ToolSettings, true, IsPs4Tool(request.ToolName));
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + options + " \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "MP3 -> AT9", request.IntermediateWavFile, request.FinalFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(true, true)
                     : ConversionWorkflowResult.Failed();
@@ -257,11 +428,14 @@ namespace at3_at9_Converter
         {
             try
             {
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildDecodeOptions(request.ToolSettings, IsPs4Tool(request.ToolName));
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d" + options + " \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT9 -> MP3 decode", request.SelectedFile, request.IntermediateWavFile, options));
                 if (!success)
                     return ConversionWorkflowResult.Failed();
 
-                success = await RunTool(@"LAME\lame.exe", "-V2 \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus);
+                success = await RunTool(@"LAME\lame.exe", "-V2 \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT9 -> MP3 encode", request.IntermediateWavFile, request.FinalFile, "-V2"));
                 return success
                     ? ConversionWorkflowResult.Success(true, false)
                     : ConversionWorkflowResult.Failed();
@@ -272,13 +446,45 @@ namespace at3_at9_Converter
             }
         }
 
-        private async Task<bool> RunTool(string fileName, string arguments, Action<string> updateStatus)
+        private async Task<bool> RunTool(string fileName, string arguments, Action<string> updateStatus, ConversionCommandLogContext logContext)
         {
-            bool success = await conversionService.RunExternalProcessAsync(fileName, arguments);
+            bool success = await conversionService.RunExternalProcessAsync(fileName, arguments, logContext);
             if (!success)
                 updateStatus("conversion_log_error");
 
             return success;
+        }
+
+        private static ConversionCommandLogContext CreateLogContext(At9ConversionRequest request, string mode, string inputFile, string outputFile, string options)
+        {
+            ConversionToolSettings settings = request.ToolSettings ?? new ConversionToolSettings();
+            return new ConversionCommandLogContext
+            {
+                Level = settings.Level,
+                ConsoleName = GetConsoleName(request.ToolName),
+                ConversionMode = mode,
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                BitRate = request.BitRate,
+                Options = options,
+                CustomEncodeArgs = settings.CustomEncodeArgs,
+                CustomDecodeArgs = settings.CustomDecodeArgs
+            };
+        }
+
+        private static bool IsPs4Tool(string toolName)
+        {
+            return string.Equals(toolName, "PS4_at9tool.exe", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string GetConsoleName(string toolName)
+        {
+            if (string.Equals(toolName, "PS4_at9tool.exe", StringComparison.OrdinalIgnoreCase))
+                return "PS4";
+            if (string.Equals(toolName, "PSVita_at9tool.exe", StringComparison.OrdinalIgnoreCase))
+                return "PSVita";
+
+            return "";
         }
     }
 
@@ -334,7 +540,9 @@ namespace at3_at9_Converter
                 }
 
                 updateStatus("at3_progress");
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + " -wholeloop \"" + wavToProcess + "\" \"" + request.FinalFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildEncodeOptions(request.ToolSettings, false, false);
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + options + " \"" + wavToProcess + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "WAV -> AT3", wavToProcess, request.FinalFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(false, true)
                     : ConversionWorkflowResult.Failed();
@@ -354,7 +562,9 @@ namespace at3_at9_Converter
         {
             try
             {
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildDecodeOptions(request.ToolSettings, false);
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d" + options + " \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT3 -> WAV", request.SelectedFile, request.IntermediateWavFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(false, false)
                     : ConversionWorkflowResult.Failed();
@@ -378,7 +588,9 @@ namespace at3_at9_Converter
                     }
                 }
 
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + " -wholeloop \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildEncodeOptions(request.ToolSettings, false, false);
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -e -br " + request.BitRate + options + " \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "MP3 -> AT3", request.IntermediateWavFile, request.FinalFile, options));
                 return success
                     ? ConversionWorkflowResult.Success(true, true)
                     : ConversionWorkflowResult.Failed();
@@ -393,11 +605,14 @@ namespace at3_at9_Converter
         {
             try
             {
-                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus);
+                string options = ConversionToolArgumentBuilder.BuildDecodeOptions(request.ToolSettings, false);
+                bool success = await RunTool(@"ATRAC\" + request.ToolName, " -d" + options + " \"" + request.SelectedFile + "\" \"" + request.IntermediateWavFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT3 -> MP3 decode", request.SelectedFile, request.IntermediateWavFile, options));
                 if (!success)
                     return ConversionWorkflowResult.Failed();
 
-                success = await RunTool(@"LAME\lame.exe", "-V2 \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus);
+                success = await RunTool(@"LAME\lame.exe", "-V2 \"" + request.IntermediateWavFile + "\" \"" + request.FinalFile + "\"", updateStatus,
+                    CreateLogContext(request, "AT3 -> MP3 encode", request.IntermediateWavFile, request.FinalFile, "-V2"));
                 return success
                     ? ConversionWorkflowResult.Success(true, false)
                     : ConversionWorkflowResult.Failed();
@@ -408,13 +623,30 @@ namespace at3_at9_Converter
             }
         }
 
-        private async Task<bool> RunTool(string fileName, string arguments, Action<string> updateStatus)
+        private async Task<bool> RunTool(string fileName, string arguments, Action<string> updateStatus, ConversionCommandLogContext logContext)
         {
-            bool success = await conversionService.RunExternalProcessAsync(fileName, arguments);
+            bool success = await conversionService.RunExternalProcessAsync(fileName, arguments, logContext);
             if (!success)
                 updateStatus("conversion_log_error");
 
             return success;
+        }
+
+        private static ConversionCommandLogContext CreateLogContext(At3ConversionRequest request, string mode, string inputFile, string outputFile, string options)
+        {
+            ConversionToolSettings settings = request.ToolSettings ?? new ConversionToolSettings();
+            return new ConversionCommandLogContext
+            {
+                Level = settings.Level,
+                ConsoleName = request.ConsoleName,
+                ConversionMode = mode,
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                BitRate = request.BitRate,
+                Options = options,
+                CustomEncodeArgs = settings.CustomEncodeArgs,
+                CustomDecodeArgs = settings.CustomDecodeArgs
+            };
         }
 
         private static int GetTargetRate(string consoleName)

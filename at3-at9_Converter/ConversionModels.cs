@@ -44,6 +44,92 @@ namespace at3_at9_Converter
         At3ToMp3
     }
 
+    public enum ToolOptionLevel
+    {
+        Basic,
+        Advanced,
+        Expert
+    }
+
+    public enum ToolLoopMode
+    {
+        WholeLoop,
+        NoLoop,
+        CustomLoop,
+        DefaultWholeLoop
+    }
+
+    public enum ToolPcmOutputFormat
+    {
+        Int16,
+        Int24,
+        Float
+    }
+
+    public sealed class ConversionToolSettings
+    {
+        public ToolOptionLevel Level { get; set; } = ToolOptionLevel.Basic;
+        public ToolLoopMode LoopMode { get; set; } = ToolLoopMode.WholeLoop;
+        public int LoopStart { get; set; }
+        public int LoopEnd { get; set; }
+        public int DecodeRepeat { get; set; } = 1;
+        public bool UseSamplingRate { get; set; }
+        public int SamplingRate { get; set; } = 48000;
+        public bool UseLoopList { get; set; }
+        public string LoopListPath { get; set; } = "";
+        public int SuperframeMode { get; set; }
+        public bool DualMode { get; set; }
+        public bool UseQuantizedBands { get; set; }
+        public int QuantizedBands { get; set; } = 8;
+        public bool UseIntensityBand { get; set; }
+        public int IntensityBand { get; set; } = -1;
+        public bool UseGradientMode { get; set; }
+        public int GradientMode { get; set; } = 4;
+        public bool WideBand { get; set; }
+        public bool BandExtension { get; set; }
+        public bool LfeSuperLowCut { get; set; }
+        public bool WaveExtensibleHeader { get; set; }
+        public ToolPcmOutputFormat PcmOutputFormat { get; set; } = ToolPcmOutputFormat.Int16;
+        public string CustomEncodeArgs { get; set; } = "";
+        public string CustomDecodeArgs { get; set; } = "";
+
+        public ConversionToolSettings Clone()
+        {
+            return (ConversionToolSettings)MemberwiseClone();
+        }
+
+        public void CopyFrom(ConversionToolSettings source)
+        {
+            if (source == null)
+                return;
+
+            Level = source.Level;
+            LoopMode = source.LoopMode;
+            LoopStart = source.LoopStart;
+            LoopEnd = source.LoopEnd;
+            DecodeRepeat = source.DecodeRepeat;
+            UseSamplingRate = source.UseSamplingRate;
+            SamplingRate = source.SamplingRate;
+            UseLoopList = source.UseLoopList;
+            LoopListPath = source.LoopListPath;
+            SuperframeMode = source.SuperframeMode;
+            DualMode = source.DualMode;
+            UseQuantizedBands = source.UseQuantizedBands;
+            QuantizedBands = source.QuantizedBands;
+            UseIntensityBand = source.UseIntensityBand;
+            IntensityBand = source.IntensityBand;
+            UseGradientMode = source.UseGradientMode;
+            GradientMode = source.GradientMode;
+            WideBand = source.WideBand;
+            BandExtension = source.BandExtension;
+            LfeSuperLowCut = source.LfeSuperLowCut;
+            WaveExtensibleHeader = source.WaveExtensibleHeader;
+            PcmOutputFormat = source.PcmOutputFormat;
+            CustomEncodeArgs = source.CustomEncodeArgs;
+            CustomDecodeArgs = source.CustomDecodeArgs;
+        }
+    }
+
     public static class ConversionModeInfo
     {
         public static bool IsAt9Mode(ConversionMode mode)
@@ -114,6 +200,7 @@ namespace at3_at9_Converter
         public string OriginalFileName { get; set; } = "";
         public string ToolName { get; set; } = "";
         public string BitRate { get; set; } = "";
+        public ConversionToolSettings ToolSettings { get; private set; } = new ConversionToolSettings();
 
         public void Reset()
         {
@@ -128,6 +215,12 @@ namespace at3_at9_Converter
             OriginalFileName = "";
             ToolName = "";
             BitRate = "";
+            ToolSettings = new ConversionToolSettings();
+        }
+
+        public void ResetToolSettings()
+        {
+            ToolSettings = new ConversionToolSettings();
         }
 
         public void SetDroppedFile(string filePath, string originalFileName, string directoryPath, string extension)
@@ -172,6 +265,19 @@ namespace at3_at9_Converter
         }
     }
 
+    public sealed class ConversionCommandLogContext
+    {
+        public ToolOptionLevel Level { get; set; } = ToolOptionLevel.Basic;
+        public string ConsoleName { get; set; } = "";
+        public string ConversionMode { get; set; } = "";
+        public string InputFile { get; set; } = "";
+        public string OutputFile { get; set; } = "";
+        public string BitRate { get; set; } = "";
+        public string Options { get; set; } = "";
+        public string CustomEncodeArgs { get; set; } = "";
+        public string CustomDecodeArgs { get; set; } = "";
+    }
+
     public sealed class At9ConversionRequest
     {
         public At9ConversionMode Mode { get; set; }
@@ -180,6 +286,7 @@ namespace at3_at9_Converter
         public string IntermediateWavFile { get; set; }
         public string ToolName { get; set; }
         public string BitRate { get; set; }
+        public ConversionToolSettings ToolSettings { get; set; }
     }
 
     public sealed class At3ConversionRequest
@@ -191,6 +298,7 @@ namespace at3_at9_Converter
         public string ToolName { get; set; }
         public string BitRate { get; set; }
         public string ConsoleName { get; set; }
+        public ConversionToolSettings ToolSettings { get; set; }
     }
 
     public static class ConversionOptions

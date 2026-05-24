@@ -1,0 +1,32 @@
+# Visual Studio user/cache files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# NuGet packages restored from packages.config
+packages/
+!packages/repositories.config
+
+# Test and coverage output
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Local tooling/cache
+.agents/
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini

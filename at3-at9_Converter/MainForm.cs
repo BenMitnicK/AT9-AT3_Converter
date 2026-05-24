@@ -30,6 +30,16 @@ namespace at3_at9_Converter
         private readonly Color disabledButtonForeColor = Color.FromArgb(55, 65, 81);
         private ConversionMode currentConversionMode = ConversionMode.None;
         private string currentStatusKey = "ready";
+        private bool conversionInProgress;
+        private bool previousConvertButtonEnabled;
+        private bool previousConsoleComboBoxEnabled;
+        private bool previousBitrateComboBoxEnabled;
+        private bool previousLanguageComboBoxEnabled;
+        private bool previousToolOptionsButtonEnabled;
+        private bool previousFilePathTextBoxEnabled;
+        private bool previousBitrateInfoPictureBoxEnabled;
+        private bool previousDropLabelAllowDrop;
+        private const string StudioGitHubUrl = "https://github.com/BenMitnicK";
 
         // ... (remaining existing variables) ...
         public static string dir = "", appdir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), version = "";
@@ -76,6 +86,9 @@ namespace at3_at9_Converter
 
         void conversionDropLabel_DragDrop(object sender, DragEventArgs e)
         {
+            if (conversionInProgress)
+                return;
+
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files == null || files.Length == 0)
                 return;
@@ -171,13 +184,27 @@ namespace at3_at9_Converter
 
         private async void convertButton_Click(object sender, EventArgs e)
         {
+            if (conversionInProgress)
+                return;
+
             if (currentConversionMode == ConversionMode.None)
                 return;
 
             if (!ConfirmOverwriteExistingFiles())
                 return;
 
-            await DoConversion();
+            conversionInProgress = true;
+            FreezeConversionUi();
+
+            try
+            {
+                await DoConversion();
+            }
+            finally
+            {
+                RestoreConversionUi();
+                conversionInProgress = false;
+            }
         }
 
         private bool ConfirmOverwriteExistingFiles()
@@ -270,7 +297,7 @@ namespace at3_at9_Converter
                         ? result.ErrorMessage
                         : T(result.ErrorKey) + " " + result.ErrorMessage;
 
-                    MessageBox.Show(message);
+                    mMessageBox(T("error"), message, SystemIcons.Error);
                 }
 
                 return;
@@ -324,6 +351,7 @@ namespace at3_at9_Converter
             bitrateComboBox.Items.Clear();
             consoleComboBox.Enabled = ConversionModeInfo.NeedsConsole(currentConversionMode);
             bitrateComboBox.Enabled = false;
+            SetToolOptionsEnabled(false);
             SetConvertButtonEnabled(false);
             FillComboBox(consoleComboBox, consoles, false);
             UpdateConsoleImages();
@@ -339,6 +367,7 @@ namespace at3_at9_Converter
             bitrateComboBox.Items.Clear();
             consoleComboBox.Enabled = false;
             bitrateComboBox.Enabled = false;
+            SetToolOptionsEnabled(false);
             SetConvertButtonEnabled(false);
             UpdateConsoleImages();
             SetStatus("ready");
@@ -362,7 +391,7 @@ namespace at3_at9_Converter
             }
             catch (Exception ex)
             {
-                MessageBox.Show(T("at9_playback_error") + " " + ex.Message);
+                mMessageBox(T("error"), T("at9_playback_error") + " " + ex.Message, SystemIcons.Error);
             }
         }
 
@@ -383,8 +412,6 @@ namespace at3_at9_Converter
             string[] versionpart = this.ProductVersion.Split('.');
             version = versionpart[0] + "." + versionpart[1];
             this.Text += MainForm.version;
-            LinkLabel.Link link = new LinkLabel.Link();
-            link.LinkData = "http://bmk.hamtek-solutions.com/";
             LoadLanguageList();
 
             dropLabel.AutoSize = false;
@@ -392,6 +419,7 @@ namespace at3_at9_Converter
             ApplyDisabledConsoleImages();
             SetStopButtonEnabled(false);
             SetConvertButtonEnabled(false);
+            SetToolOptionsEnabled(false);
         }
 
         private void ApplyDisabledConsoleImages()
@@ -491,6 +519,7 @@ namespace at3_at9_Converter
             if (!ConversionModeInfo.NeedsBitRate(currentConversionMode))
                 bitrateComboBox.Items.Clear();
 
+            SetToolOptionsEnabled(true);
             SetConvertButtonEnabled(!ConversionModeInfo.NeedsBitRate(currentConversionMode)
                 || bitrateComboBox.SelectedIndex >= 0);
         }
@@ -503,6 +532,20 @@ namespace at3_at9_Converter
                 at3Controller.SelectBitRate(bitrateComboBox.Text);
 
             SetConvertButtonEnabled(true);
+        }
+
+        private void toolOptionsButton_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(consoleComboBox.Text) || currentConversionMode == ConversionMode.None)
+                return;
+
+            using (ToolOptionsDialog dialog = new ToolOptionsDialog(consoleComboBox.Text, currentConversionMode, CurrentState.ToolSettings, T))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                CurrentState.ToolSettings.CopyFrom(dialog.Settings);
+            }
         }
 
         private void tabPage1ConsoleCombo()
@@ -582,11 +625,11 @@ namespace at3_at9_Converter
             }
             catch (FileNotFoundException ex)
             {
-                MessageBox.Show(T("file_not_found") + " " + ex.FileName);
+                mMessageBox(T("error"), T("file_not_found") + " " + ex.FileName, SystemIcons.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(T("playback_error") + " " + ex.Message);
+                mMessageBox(T("error"), T("playback_error") + " " + ex.Message, SystemIcons.Error);
             }
         }
 
@@ -599,11 +642,11 @@ namespace at3_at9_Converter
             }
             catch (FileNotFoundException ex)
             {
-                MessageBox.Show(T("file_not_found") + " " + ex.FileName);
+                mMessageBox(T("error"), T("file_not_found") + " " + ex.FileName, SystemIcons.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(T("at3_playback_error") + " " + ex.Message);
+                mMessageBox(T("error"), T("at3_playback_error") + " " + ex.Message, SystemIcons.Error);
             }
         }
 
@@ -621,10 +664,12 @@ namespace at3_at9_Converter
             }
         }
 
-        private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void studioLinkStatusLabel_Click(object sender, EventArgs e)
         {
-            // Send the URL to the operating system.
-            Process.Start(e.Link.LinkData as string);
+            Process.Start(new ProcessStartInfo(StudioGitHubUrl)
+            {
+                UseShellExecute = true
+            });
         }
 
         private void stopPlaybackButton_Click(object sender, EventArgs e)
@@ -715,6 +760,39 @@ namespace at3_at9_Converter
             convertButton.ForeColor = enabled ? Color.White : disabledButtonForeColor;
         }
 
+        private void FreezeConversionUi()
+        {
+            previousConvertButtonEnabled = convertButton.Enabled;
+            previousConsoleComboBoxEnabled = consoleComboBox.Enabled;
+            previousBitrateComboBoxEnabled = bitrateComboBox.Enabled;
+            previousLanguageComboBoxEnabled = languageComboBox.Enabled;
+            previousToolOptionsButtonEnabled = toolOptionsButton.Enabled;
+            previousFilePathTextBoxEnabled = filePathTextBox.Enabled;
+            previousBitrateInfoPictureBoxEnabled = bitrateInfoPictureBox.Enabled;
+            previousDropLabelAllowDrop = dropLabel.AllowDrop;
+
+            SetConvertButtonEnabled(false);
+            consoleComboBox.Enabled = false;
+            bitrateComboBox.Enabled = false;
+            languageComboBox.Enabled = false;
+            toolOptionsButton.Enabled = false;
+            filePathTextBox.Enabled = false;
+            bitrateInfoPictureBox.Enabled = false;
+            dropLabel.AllowDrop = false;
+        }
+
+        private void RestoreConversionUi()
+        {
+            SetConvertButtonEnabled(previousConvertButtonEnabled);
+            consoleComboBox.Enabled = previousConsoleComboBoxEnabled;
+            bitrateComboBox.Enabled = previousBitrateComboBoxEnabled;
+            languageComboBox.Enabled = previousLanguageComboBoxEnabled;
+            toolOptionsButton.Enabled = previousToolOptionsButtonEnabled;
+            filePathTextBox.Enabled = previousFilePathTextBoxEnabled;
+            bitrateInfoPictureBox.Enabled = previousBitrateInfoPictureBoxEnabled;
+            dropLabel.AllowDrop = previousDropLabelAllowDrop;
+        }
+
         private void LoadLanguage(string langCode)
         {
             LanguageLoadResult result = languageService.LoadLanguage(langCode, GetDefaultEnglishLanguage());
@@ -745,6 +823,7 @@ namespace at3_at9_Converter
         {
             dropLabel.Text = T("drag_drop");
             convertButton.Text = T("convert");
+            toolOptionsButton.Text = T("tool_options");
             stopPlaybackButton.Text = T("stop_playing");
             conversionGroupBox.Text = T("conversion_type");
             bitrateLabel.Text = T("bitrate");
@@ -763,6 +842,7 @@ namespace at3_at9_Converter
             mainToolTip.SetToolTip(dropLabel, T("tooltip_drag_drop"));
             mainToolTip.SetToolTip(convertButton, T("tooltip_convert"));
             mainToolTip.SetToolTip(filePathTextBox, T("tooltip_file_path"));
+            mainToolTip.SetToolTip(toolOptionsButton, T("tooltip_tool_options"));
         }
 
         private void LoadDefaultEnglishLanguage()
@@ -778,15 +858,44 @@ namespace at3_at9_Converter
                 { "language", "English" }, 
                 { "drag_drop", "Drag and drop your file here" },
                 { "convert", "Convert" },
+                { "tool_options", "Options..." },
                 { "stop_playing", "Stop Playing" },
                 { "conversion_type", "Conversion type" },
                 { "bitrate", "BitRate [kbps]:" },
                 { "console_type", "Console Type:" },               
                 { "question", "Question" },
                 { "information", "Information" },
+                { "error", "Error" },
                 { "yes", "Yes" },
                 { "no", "No" },
+                { "cancel", "Cancel" },
                 { "ok", "OK" },
+                { "tool_options_title", "Conversion options" },
+                { "tool_options_mode", "Mode" },
+                { "tool_options_encode_options", "Encode options" },
+                { "tool_options_decode_options", "Decode options" },
+                { "tool_options_expert_encode_switches", "Expert encode switches" },
+                { "tool_options_expert_custom_arguments", "Expert custom arguments" },
+                { "tool_options_loop", "Loop" },
+                { "tool_options_loop_start", "Loop start" },
+                { "tool_options_loop_end", "Loop end" },
+                { "tool_options_repeat", "Repeat" },
+                { "tool_options_wav_output", "WAV output" },
+                { "tool_options_wave_extensible", "WAVE_FORMAT_EXTENSIBLE header" },
+                { "tool_options_sampling_rate", "Sampling rate (-fs)" },
+                { "tool_options_loop_list", "Loop list file" },
+                { "tool_options_superframe", "Superframe" },
+                { "tool_options_dual_mode", "Dual mode" },
+                { "tool_options_quantized_bands", "Quantized bands" },
+                { "tool_options_intensity_band", "Intensity band" },
+                { "tool_options_gradient_mode", "Gradient mode" },
+                { "tool_options_band_mode", "Band mode" },
+                { "tool_options_band_mode_default", "Default" },
+                { "tool_options_wide_band", "Wide band (-wband)" },
+                { "tool_options_band_extension", "Band extension (-bex)" },
+                { "tool_options_lfe_super_low_cut", "LFE super low cut (-slc)" },
+                { "tool_options_encode", "Encode" },
+                { "tool_options_decode", "Decode" },
                 { "format_question", "What format do you want to convert it to?" },
                 { "target_format_question", "What codec do you want to convert it to?" },
                 { "conversion_mode_prefix", "Conversion:" },
@@ -814,7 +923,17 @@ namespace at3_at9_Converter
                 { "at3_playback_error", "AT3 playback error:" },
                 { "wav_preprocess_error", "Error during WAV preprocessing:" },
                 { "psp_conversion_error", "PSP conversion error:" },
-                { "conversion_log_error", "Error! Check conversion_errors.log" },
+                { "conversion_log_error", "Error! Conversion failed" },
+                { "expert_mode_warning_title", "Expert mode warning" },
+                { "expert_mode_warning", "Expert mode is intended for advanced users.\r\n\r\nSome option combinations may fail depending on the Sony tool, bitrate, channels, sample rate or target console.\r\nUse it at your own risk." },
+                { "invalid_options", "Invalid options" },
+                { "custom_loop_end_error", "Custom loop end must be greater than loop start." },
+                { "at3_custom_loop_samples_error", "AT3 custom loops need at least 6143 samples between start and end." },
+                { "ps4_bex_wband_error", "PS4 -bex and -wband cannot be enabled together." },
+                { "ps4_bex_sample_rate_error", "PS4 -bex requires 48000 Hz output." },
+                { "ps4_bex_nbands_error", "With PS4 -bex, -nbands must be between 5 and 10." },
+                { "loop_list_empty_error", "Loop list is enabled, but no loop list file is set." },
+                { "loop_list_missing_error", "Loop list file was not found." },
                 { "psvita_bitrate_info", "If you make theme for PSVita/TV use the BitRate 144 for more compatibility" },                        
                 { "language_outdated_warning", "This translation file is older than the application language template. Missing translations will be displayed in English." },
                 { "tooltip_conversion_type", "Selected conversion type" },
@@ -823,8 +942,37 @@ namespace at3_at9_Converter
                 { "tooltip_bitrate", "Select your bitrate" },
                 { "tooltip_drag_drop", "Drag and drop your file here" },
                 { "tooltip_convert", "Start conversion" },
-                { "tooltip_file_path", "Selected file path" }
+                { "tooltip_file_path", "Selected file path" },
+                { "tooltip_tool_options", "Open conversion options for the selected console and mode" },
+                { "tooltip_options_mode", "Basic keeps safe defaults. Advanced exposes useful options. Expert exposes codec-specific switches." },
+                { "tooltip_loop_mode", "Whole loop matches the current app default. No loop writes no loop metadata. Custom loop uses sample positions." },
+                { "tooltip_loop_start", "Start sample for -loop S E." },
+                { "tooltip_loop_end", "End sample for -loop S E. It must be greater than start and inside the source length." },
+                { "tooltip_decode_repeat", "Used with -d. Sony tools default to 2, but this app defaults to 1 to avoid doubled output." },
+                { "tooltip_wav_output", "PS4 AT9 decode only. 16-bit is the safest default." },
+                { "tooltip_wave_extensible", "PS4 AT9 decode only. Adds -wext." },
+                { "tooltip_sampling_rate", "AT9 encode only. Leave disabled unless you know the target sample-rate mode." },
+                { "tooltip_loop_list", "Path passed to -looplist. Sony tools support up to 2 loops." },
+                { "tooltip_superframe", "Controls AT9 superframe encoding. Leave on Default unless a target requires a specific mode." },
+                { "tooltip_dual_mode", "Enables dual encode mode for AT9 tools. Use only when you know the target expects it." },
+                { "tooltip_quantized_bands", "Sets -nbands. The valid range depends on the selected sampling rate and PS4 -bex mode." },
+                { "tooltip_intensity_band", "Sets -isband. -1 disables it; otherwise use a band value supported by the selected tool." },
+                { "tooltip_gradient_mode", "0-3 manual, 4 automatic. Lower values suit tonal sounds; higher values suit noisy sources." },
+                { "tooltip_band_mode", "PS4 AT9 only. Select Default, -wband, or -bex. -wband and -bex cannot be combined." },
+                { "tooltip_wide_band", "PS4 AT9 only. Enables -wband. Cannot be combined with -bex." },
+                { "tooltip_band_extension", "PS4 only. Cannot be combined with -wband. Requires 48kHz output and nbands 5-10 when nbands is used." },
+                { "tooltip_lfe_super_low_cut", "PS4 AT9 only. Enables LFE super low cut with -slc." },
+                { "tooltip_custom_encode_args", "Appended to encode commands before input/output files. Use only options supported by the selected console tool." },
+                { "tooltip_custom_decode_args", "Appended to decode commands before input/output files." }
             };
+        }
+
+        private void SetToolOptionsEnabled(bool enabled)
+        {
+            toolOptionsButton.Enabled = enabled;
+
+            toolOptionsButton.BackColor = enabled ? activeButtonBackColor : disabledButtonBackColor;
+            toolOptionsButton.ForeColor = enabled ? Color.White : disabledButtonForeColor;
         }
     }
 }

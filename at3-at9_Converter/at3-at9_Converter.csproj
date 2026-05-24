@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -114,6 +114,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="DialogService.cs" />
     <Compile Include="LanguageService.cs" />
+    <Compile Include="ToolOptionsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FormChooser.resx">
       <DependentUpon>FormChooser.cs</DependentUpon>
@@ -192,6 +195,8 @@
     <None Include="Resources\psvita_bitrate.png" />
     <None Include="Resources\psp_ps3_bitrate.png" />
     <None Include="Resources\info_bitrate.png" />
+    <None Include="Resources\Advanced.png" />
+    <None Include="Resources\Expert.png" />
     <None Include="Resources\psvita.png" />
     <None Include="Resources\ps4.png" />
     <None Include="Resources\ps3.png" />
